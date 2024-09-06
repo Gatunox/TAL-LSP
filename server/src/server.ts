@@ -1,0 +1,72 @@
+import {
+  createConnection,
+  TextDocuments,
+  ProposedFeatures,
+  InitializeParams,
+  TextDocumentSyncKind,
+  InitializeResult,
+} from "vscode-languageserver/node";
+import * as path from 'path';
+import log from './log';
+
+import tokenizer from './tokenizer';
+
+import { TextDocument } from "vscode-languageserver-textdocument";
+
+// Create a connection for the server, using Node's IPC as a transport.
+// Also include all preview / proposed LSP features.
+const connection = createConnection(ProposedFeatures.all);
+
+// Create a simple text document manager.
+const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
+
+connection
+
+connection.onInitialize((params: InitializeParams) => {
+  
+  const result: InitializeResult = {
+    capabilities: {
+      textDocumentSync: TextDocumentSyncKind.Incremental,
+      //completionProvider: {
+      //resolveProvider: true,
+      //triggerCharacters: ['$', '{'],
+      //},
+      //hoverProvider: true,
+      //documentHighlightProvider: true,
+      //documentFormattingProvider: true,
+      //colorProvider: true,
+      //documentSymbolProvider: true,
+      //definitionProvider: true,
+    },
+  };
+  return result;
+});
+
+process.on('message', (message) => {
+  console.log('DEBUG', 'Received IPC message:', message);
+});
+
+
+documents.onDidChangeContent((change) => {
+  const filePath = decodeURIComponent(change.document.uri.replace('file:///', ''));
+  const directoryPath = path.dirname(filePath);
+
+  const startTime = Date.now();
+
+  log.init(directoryPath);
+  log.write('DEBUG', change.document.getText());
+  log.write('DEBUG', `File system path: ${filePath}.`); 
+  //log.write('DEBUG', tokenizer(change.document.getText()));
+  log.write('DEBUG', `Time taken to tokenizer: ${Date.now() - startTime} ms`);
+  
+  //connection.window.showInformationMessage(
+  //  "onDidChangeContent: " + change.document.uri + ", change: " + change.document.getText() 
+  //);
+});
+
+// Make the text document manager listen on the connection
+// for open, change and close text document events
+documents.listen(connection);
+
+// Listen on the connection
+connection.listen();
