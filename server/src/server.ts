@@ -43,9 +43,12 @@ connection.onInitialize((params: InitializeParams) => {
 });
 
 process.on('message', (message) => {
-  console.log('DEBUG', 'Received IPC message:', message);
-});
+  // Assuming message is a string
+  const messageString = JSON.stringify(message);
 
+  console.log('Content-Length:', Buffer.byteLength(messageString, 'utf8'),'\n');
+  console.log('', messageString,'\n');
+});
 
 documents.onDidChangeContent((change) => {
   const filePath = decodeURIComponent(change.document.uri.replace('file:///', ''));
@@ -53,9 +56,10 @@ documents.onDidChangeContent((change) => {
 
   const startTime = Date.now();
 
-  log.init(directoryPath);
+  if (log.init(directoryPath)) {
+    log.write('DEBUG', `File system path: ${filePath}.`); 
+  }
   log.write('DEBUG', change.document.getText());
-  log.write('DEBUG', `File system path: ${filePath}.`); 
   //log.write('DEBUG', tokenizer(change.document.getText()));
   log.write('DEBUG', `Time taken to tokenizer: ${Date.now() - startTime} ms`);
   

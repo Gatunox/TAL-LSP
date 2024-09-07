@@ -88,6 +88,7 @@ exports.default = { Logger,
     init: (directoryPath) => {
         if (logger === undefined) {
             logger = new Logger({ level: 'DEBUG', directoryPath, allowedProcs: [] });
+            return true;
         }
         /*log = fs.createWriteStream(directoryPath + '/lsp.log');
         logger.on('open', (fd) => {
@@ -99,6 +100,7 @@ exports.default = { Logger,
             console.error(getCallerFunctionName() + ", " + "Error creating WriteStream:", err);
         });
         */
+        return false;
     },
     write: (logLevel, message) => {
         if (!logger) {

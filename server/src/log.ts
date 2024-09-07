@@ -107,9 +107,10 @@ function getCallerFunctionName(): string | undefined {
 }
 
 export default {Logger,
-    init: (directoryPath:string) => {
+    init: (directoryPath:string): Boolean => {
         if (logger === undefined){
             logger = new Logger({ level: 'DEBUG', directoryPath, allowedProcs: [] });
+            return true;
         }
         /*log = fs.createWriteStream(directoryPath + '/lsp.log');
         logger.on('open', (fd) => {
@@ -121,6 +122,7 @@ export default {Logger,
             console.error(getCallerFunctionName() + ", " + "Error creating WriteStream:", err);
         });
         */
+       return false;
     },
     write: (logLevel: LogLevel, message: object | string) => {
         if (!logger) {

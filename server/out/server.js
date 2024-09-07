@@ -29,15 +29,19 @@ connection.onInitialize((params) => {
     return result;
 });
 process.on('message', (message) => {
-    console.log('DEBUG', 'Received IPC message:', message);
+    // Assuming message is a string
+    const messageString = JSON.stringify(message);
+    console.log('Content-Length:', Buffer.byteLength(messageString, 'utf8'), '\n');
+    console.log('', messageString, '\n');
 });
 documents.onDidChangeContent((change) => {
     const filePath = decodeURIComponent(change.document.uri.replace('file:///', ''));
     const directoryPath = path.dirname(filePath);
     const startTime = Date.now();
-    log_1.default.init(directoryPath);
+    if (log_1.default.init(directoryPath)) {
+        log_1.default.write('DEBUG', `File system path: ${filePath}.`);
+    }
     log_1.default.write('DEBUG', change.document.getText());
-    log_1.default.write('DEBUG', `File system path: ${filePath}.`);
     //log.write('DEBUG', tokenizer(change.document.getText()));
     log_1.default.write('DEBUG', `Time taken to tokenizer: ${Date.now() - startTime} ms`);
     //connection.window.showInformationMessage(
