@@ -60,7 +60,7 @@ documents.onDidChangeContent((change) => {
     log.write('DEBUG', `File system path: ${filePath}.`); 
   }
   log.write('DEBUG', change.document.getText());
-  //log.write('DEBUG', tokenizer(change.document.getText()));
+  log.write('DEBUG', tokenizer(change.document.getText()));
   log.write('DEBUG', `Time taken to tokenizer: ${Date.now() - startTime} ms`);
   
   //connection.window.showInformationMessage(

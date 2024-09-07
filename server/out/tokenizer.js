@@ -64,7 +64,7 @@ const tokenize = (input) => {
              * We assume white space is the end of a word.5679--++
              * --
              */
-            while (helper_1.default.isLetter(helper_1.default.peekCharacter(input))) {
+            while (helper_1.default.getCursor() < input.length && helper_1.default.isLetter(helper_1.default.peekCharacter(input))) {
                 symbol += helper_1.default.getCharacter(input);
             }
             if (helper_1.default.isKeyword(symbol)) {
@@ -84,11 +84,13 @@ const tokenize = (input) => {
         }
         if (helper_1.default.isQuote(helper_1.default.peekCharacter(input))) {
             let string = '';
-            let symbol = helper_1.default.getCharacter(input);
-            log_1.default.write('DEBUG', `isLetter retuned true with symbol = ${symbol}.`);
-            while (!helper_1.default.isQuote(helper_1.default.peekCharacter(input))) {
+            let startquote = helper_1.default.getCharacter(input);
+            log_1.default.write('DEBUG', `isQuote retuned true with symbol = ${startquote}.`);
+            while (helper_1.default.getCursor() < input.length && !helper_1.default.isQuote(helper_1.default.peekCharacter(input))) {
                 string += helper_1.default.getCharacter(input);
             }
+            let emdquote = helper_1.default.getCharacter(input);
+            log_1.default.write('DEBUG', `isQuote retuned true with symbol = ${emdquote}.`);
             tokens.push({
                 type: 'String',
                 value: string,

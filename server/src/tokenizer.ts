@@ -76,7 +76,7 @@ const tokenize = (input: string) => {
              * We assume white space is the end of a word.5679--++
              * --
              */
-            while (helpers.isLetter(helpers.peekCharacter(input))) {
+            while (helpers.getCursor() < input.length && helpers.isLetter(helpers.peekCharacter(input))) {
                 symbol += helpers.getCharacter(input);
             }
 
@@ -98,11 +98,13 @@ const tokenize = (input: string) => {
 
         if (helpers.isQuote(helpers.peekCharacter(input))) {
             let string = '';
-            let symbol =  helpers.getCharacter(input)
-            log.write('DEBUG', `isLetter retuned true with symbol = ${symbol}.`)
-            while (!helpers.isQuote(helpers.peekCharacter(input))) {
+            let startquote =  helpers.getCharacter(input)
+            log.write('DEBUG', `isQuote retuned true with symbol = ${startquote}.`)
+            while (helpers.getCursor() < input.length && !helpers.isQuote(helpers.peekCharacter(input))) {
                 string += helpers.getCharacter(input);
             }
+            let emdquote =  helpers.getCharacter(input)
+            log.write('DEBUG', `isQuote retuned true with symbol = ${emdquote}.`)
             tokens.push({
                 type: 'String',
                 value: string,
