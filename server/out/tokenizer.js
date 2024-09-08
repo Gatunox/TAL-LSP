@@ -17,14 +17,16 @@ const tokenize = (input) => {
             let comment = helper_1.default.getCharacters(input, 2);
             log_1.default.write('DEBUG', `isSingleLineComment retuned true with value = ${comment}.`);
             while (helper_1.default.getCursor() < input.length && !helper_1.default.isCRLF(helper_1.default.peekCharacters(input, 2))) {
-                helper_1.default.getCharacter(input);
+                comment += helper_1.default.getCharacter(input);
             }
             if (helper_1.default.getCursor() < input.length) {
-                helper_1.default.skipCharacters(input, 2);
+                comment += helper_1.default.getCharacters(input, 2);
                 log_1.default.write('DEBUG', `CRLF Found`);
             }
+            log_1.default.write('DEBUG', `isSingleLineComment ingnoring: ${comment}.`);
             continue;
         }
+        else 
         /* SKIP line if we find ? */
         if (helper_1.default.isCompilerDirective(helper_1.default.peekCharacter(input))) {
             let directive = helper_1.default.getCharacter(input);
@@ -36,7 +38,7 @@ const tokenize = (input) => {
             log_1.default.write('DEBUG', `Directive Found = ${JSON.stringify(tokens[tokens.length - 1])}.`);
             continue;
         }
-        if (helper_1.default.isNumber(helper_1.default.peekCharacter(input))) {
+        else if (helper_1.default.isNumber(helper_1.default.peekCharacter(input))) {
             let number = helper_1.default.getCharacter(input);
             log_1.default.write('DEBUG', `isNumber retuned true with number = ${number}.`);
             /**
@@ -54,7 +56,7 @@ const tokenize = (input) => {
             log_1.default.write('DEBUG', `Number Found = ${JSON.stringify(tokens[tokens.length - 1])}.`);
             continue;
         }
-        if (helper_1.default.isLetter(helper_1.default.peekCharacter(input))) {
+        else if (helper_1.default.isLetter(helper_1.default.peekCharacter(input))) {
             let symbol = helper_1.default.getCharacter(input);
             log_1.default.write('DEBUG', `isLetter retuned true with symbol = ${symbol}.`);
             /**
@@ -82,7 +84,7 @@ const tokenize = (input) => {
             log_1.default.write('DEBUG', `Letter Found = ${JSON.stringify(tokens[tokens.length - 1])}.`);
             continue;
         }
-        if (helper_1.default.isQuote(helper_1.default.peekCharacter(input))) {
+        else if (helper_1.default.isQuote(helper_1.default.peekCharacter(input))) {
             let string = '';
             let startquote = helper_1.default.getCharacter(input);
             log_1.default.write('DEBUG', `isQuote retuned true with symbol = ${startquote}.`);
@@ -98,7 +100,7 @@ const tokenize = (input) => {
             log_1.default.write('DEBUG', `Quote Found = ${JSON.stringify(tokens[tokens.length - 1])}.`);
             continue;
         }
-        if (helper_1.default.isParenthesis(helper_1.default.peekCharacter(input))) {
+        else if (helper_1.default.isParenthesis(helper_1.default.peekCharacter(input))) {
             tokens.push({
                 type: 'Parenthesis',
                 value: helper_1.default.getCharacter(input),

@@ -110,7 +110,9 @@ const DATA_TYPES = ["STRING",
 /* TODO */
 /* Check to see how to address the + and - Unary operators */
 let cursor = 0;
-const getCursor = () => cursor;
+const getCursor = function getCursor() {
+    return cursor;
+};
 const resetCursor = () => {
     cursor = 0;
 };
@@ -132,6 +134,7 @@ const getCharacters = (input, numberOfCharacter) => {
         return "";
     const characters = input.substring(cursor, cursor + numberOfCharacter);
     log_1.default.write('DEBUG', `returned "${characters}", (${characters.length}), at ${cursor}, for ${numberOfCharacter}.`);
+    cursor += numberOfCharacter;
     return characters;
 };
 const peekCharacter = (input) => {

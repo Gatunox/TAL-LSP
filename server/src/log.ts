@@ -48,10 +48,11 @@ class Logger {
         if (stack && stack.length > 3) {
             const caller = stack[4].match(/at\s+(.*?)\s+\(/);
             if (caller && caller[1]) {
-                return caller[1].trim();
+                const functionName = caller[1].split('.').pop();
+                return functionName?.trim() || 'anonymous function';
             }
         }
-        return "Anonymous Function";
+        return "anonymous function";
     }
 
     private shouldLog(logLevel: LogLevel): boolean {
@@ -66,8 +67,7 @@ class Logger {
         
         const callerName = this.getCallerFunctionName(logLevel);
 
-        this.logg.write(`[${logLevel}] getCallerFunctionName returned: ${callerName}\n`);
-        
+        // this.logg.write(`[${logLevel}] getCallerFunctionName returned: ${callerName}\n`);
         if (this.allowedProcs && this.allowedProcs.length > 0 && callerName) {
             if (!this.allowedProcs.includes(callerName)) return;
         }

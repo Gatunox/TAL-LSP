@@ -1,7 +1,6 @@
 import helpers from './helper';
 import log from './log';
 
-
 const tokenize = (input: string) => {
   
     let tokens:any = [];
@@ -22,15 +21,16 @@ const tokenize = (input: string) => {
             let comment = helpers.getCharacters(input, 2);
             log.write('DEBUG', `isSingleLineComment retuned true with value = ${comment}.`)
             while (helpers.getCursor() < input.length && !helpers.isCRLF(helpers.peekCharacters(input, 2))) {
-                helpers.getCharacter(input);
+                comment += helpers.getCharacter(input);
             }
             if (helpers.getCursor() < input.length){
-                helpers.skipCharacters(input, 2);
+                comment += helpers.getCharacters(input, 2);
                 log.write('DEBUG', `CRLF Found`)
             }
+            log.write('DEBUG', `isSingleLineComment ingnoring: ${comment}.`)
             continue;
         }
-
+        else
         /* SKIP line if we find ? */
         if (helpers.isCompilerDirective(helpers.peekCharacter(input))){ 
             let directive = helpers.getCharacter(input);
@@ -43,7 +43,7 @@ const tokenize = (input: string) => {
             log.write('DEBUG', `Directive Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
             continue;
         }
-    
+        else
         if (helpers.isNumber(helpers.peekCharacter(input))) {
             let number = helpers.getCharacter(input);
             log.write('DEBUG', `isNumber retuned true with number = ${number}.`)
@@ -64,7 +64,7 @@ const tokenize = (input: string) => {
             log.write('DEBUG', `Number Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
             continue;
         }
-
+        else
         if (helpers.isLetter(helpers.peekCharacter(input))) {
             let symbol = helpers.getCharacter(input);
             log.write('DEBUG', `isLetter retuned true with symbol = ${symbol}.`)
@@ -95,7 +95,7 @@ const tokenize = (input: string) => {
             log.write('DEBUG', `Letter Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
             continue;
         }
-
+        else
         if (helpers.isQuote(helpers.peekCharacter(input))) {
             let string = '';
             let startquote =  helpers.getCharacter(input)
@@ -113,7 +113,7 @@ const tokenize = (input: string) => {
 
             continue;
         }
-
+        else
         if (helpers.isParenthesis(helpers.peekCharacter(input))) {
             tokens.push({
                 type: 'Parenthesis',

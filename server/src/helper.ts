@@ -117,7 +117,9 @@ const DATA_TYPES =  ["STRING",
 
 let cursor = 0;
 
-const getCursor = (): number => cursor;
+const getCursor = function getCursor(): number {
+    return cursor;
+};
 const resetCursor = (): void => {
     cursor = 0;
 };
@@ -138,6 +140,7 @@ const getCharacters = (input: string, numberOfCharacter: number ): string => {
     if (!(getCursor() + numberOfCharacter < input.length)) return "";
     const characters = input.substring(cursor, cursor + numberOfCharacter);
     log.write('DEBUG', `returned "${characters}", (${characters.length}), at ${cursor}, for ${numberOfCharacter}.`)
+    cursor += numberOfCharacter;
     return characters;
 };
 const peekCharacter = (input: string): string => {
