@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const node_1 = require("vscode-languageserver/node");
 const path = require("path");
 const log_1 = require("./log");
-const tokenizer_1 = require("./tokenizer");
 const vscode_languageserver_textdocument_1 = require("vscode-languageserver-textdocument");
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -35,7 +34,7 @@ process.on('message', (message) => {
     console.log('Content-Length:', Buffer.byteLength(messageString, 'utf8'), '\n');
     console.log('', messageString, '\n');
 });
-documents.onDidChangeContent((change) => {
+documents.onDidChangeContent(function handleContentChange(change) {
     const filePath = decodeURIComponent(change.document.uri.replace('file:///', ''));
     const directoryPath = path.dirname(filePath);
     const startTime = Date.now();
@@ -43,7 +42,7 @@ documents.onDidChangeContent((change) => {
         log_1.default.write('DEBUG', `File system path: ${filePath}.`);
     }
     log_1.default.write('DEBUG', change.document.getText());
-    log_1.default.write('DEBUG', (0, tokenizer_1.default)(change.document.getText()));
+    // log.write('DEBUG', tokenizer(change.document.getText()));
     log_1.default.write('DEBUG', `Time taken to tokenizer: ${Date.now() - startTime} ms`);
     //connection.window.showInformationMessage(
     //  "onDidChangeContent: " + change.document.uri + ", change: " + change.document.getText() 

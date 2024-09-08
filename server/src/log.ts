@@ -40,16 +40,18 @@ class Logger {
         });
     }
 
-    private getCallerFunctionName(): string | undefined {
+    private getCallerFunctionName(logLevel: LogLevel,): string | undefined {
         const error = new Error();
-        const stack = error.stack?.split("\n");
+        const stack = error.stack?.split("\n") || [];
+
+        // this.logg.write(`[${logLevel}] stack: ${stack}\n`);
         if (stack && stack.length > 3) {
             const caller = stack[4].match(/at\s+(.*?)\s+\(/);
             if (caller && caller[1]) {
-                return caller[1];
+                return caller[1].trim();
             }
         }
-        return undefined;
+        return "Anonymous Function";
     }
 
     private shouldLog(logLevel: LogLevel): boolean {
@@ -62,7 +64,9 @@ class Logger {
     log(logLevel: LogLevel, message: object |string): void {
         if (!this.shouldLog(logLevel)) return;
         
-        const callerName = this.getCallerFunctionName();
+        const callerName = this.getCallerFunctionName(logLevel);
+
+        this.logg.write(`[${logLevel}] getCallerFunctionName returned: ${callerName}\n`);
         
         if (this.allowedProcs && this.allowedProcs.length > 0 && callerName) {
             if (!this.allowedProcs.includes(callerName)) return;
