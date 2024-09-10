@@ -30,7 +30,26 @@ const tokenize = (input: string) => {
             log.write('DEBUG', `isSingleLineComment ingnoring: ${comment}.`)
             continue;
         }
-        else
+        else 
+        if (helpers.isComment(helpers.peekCharacter(input))){  
+            let comment = helpers.getCharacters(input, 2);
+            log.write('DEBUG', `isComment retuned true with value = ${comment}.`)
+            while (helpers.getCursor() < input.length && 
+                   !helpers.isComment(helpers.peekCharacter(input)) &&
+                   !helpers.isCRLF(helpers.peekCharacters(input, 2))) {
+                comment += helpers.getCharacter(input);
+            }
+            if (helpers.getCursor() < input.length){
+                if (helpers.isComment(helpers.peekCharacter(input))){
+                    comment += helpers.getCharacter(input);
+                } else if (helpers.isCRLF(helpers.peekCharacters(input, 2))){
+                    comment += helpers.getCharacters(input, 2);
+                }
+                log.write('DEBUG', `CRLF Found`)
+            }
+            log.write('DEBUG', `isComment ingnoring: ${comment}.`)
+            continue;
+        }
         /* SKIP line if we find ? */
         if (helpers.isCompilerDirective(helpers.peekCharacter(input))){ 
             let directive = helpers.getCharacter(input);
