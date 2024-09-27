@@ -6,7 +6,7 @@ const WHITESPACE = /\s+/;
 const NUMBER = /^[0-9]+$/;
 const LINECOMMENT = /^--$/;
 const CRLF = /\r\n/;
-const DIRECTIVE = /^\?$/;
+const DIRECTIVE = /\?/;
 /*********************************************************************************************************************************/
 /************************************************************  SYMBOLS  *********************************************************/
 /*********************************************************************************************************************************/
@@ -21,29 +21,44 @@ const BASE_ADDRESS_SYMBOLS = ["'P'",
     "'S'",
     "'SG'",
 ];
-const DELIMITER_SYMBOLS = ["'P'",
-    "'G'",
-    "'L'",
-    "'P'",
-    "'S'",
-    "'SG'",
+const DELIMITER_SYMBOLS = ["!",
+    "--",
+    ",",
+    "<",
+    ">",
+    ":",
+    "(",
+    ")",
+    "[",
+    "]",
+    "->",
+    "\"",
+    "=",
+    "#",
+    "'",
+    "$",
+    "?",
 ];
 /*********************************************************************************************************************************/
 /***********************************************************  OPERATORS  *********************************************************/
 /*********************************************************************************************************************************/
-const BITS_OPERATORS = ["<<",
-    ">>",
-    "'<<'",
-    "'>>'"
-];
 const ASSIGMENT_OPERATORS = [":="];
 const MOVE_OPERATORS = ["':='",
     "'=:'",
     "&"
 ];
 const LABEL_CASE_OPERATORS = [".."];
+const REMOVE_INDIRECTION_OPERATOR = ["@"];
+const REPETITION_OPERATOR = ["*"];
 const TEMPLATE_STRUCTURE_OPERATOR = ["(*)"];
 const FIXED_PARAMETET_TYPE_OPERATOR = ["(*)"];
+const DEREFERECING_OPERATOR = ["."];
+const BIT_FIELD_OPERATOR = ["."];
+const BITS_SHIFT_OPERATORS = ["<<",
+    ">>",
+    "'<<'",
+    "'>>'"
+];
 const ARITHMETIC_EXPRESION_OPERATORS = ["+",
     "-",
     "*",
@@ -70,7 +85,10 @@ const RELACTIONAL_EXPRESION_OPERATORS = ["<",
     "'>='",
     "'<>'"
 ];
-const COMPILER_DIRECTIVE = ["?"];
+const BOOLEAN_EXPRESION_OPERATORS = ["AND",
+    "OR",
+    "NOT",
+];
 /*********************************************************************************************************************************/
 /*********************************************************** DIRECTIVES **********************************************************/
 /*********************************************************************************************************************************/
@@ -99,13 +117,14 @@ const KEYWORDS = ["AND", "DO", "FORWARD", "MAIN", "RETURN", "TO",
     "CODE", "FIXED", "LITERAL", "REAL", "SUBPROC",
     "DEFINE", "FOR", "LOR", "RESIDENT", "THEN",
 ];
+/*********************************************************************************************************************************/
+/********************************************************** DATA TYPES  **********************************************************/
+/*********************************************************************************************************************************/
 const DATA_TYPES = ["STRING",
-    "INT", "INT(16)",
-    "INT(32)",
-    "FIXED", "INT(64",
-    "REAL", "REAL(32)",
-    "REAL(64)",
-    "UNSIGNED(n)",
+    "INT",
+    "FIXED",
+    "REAL",
+    "UNSIGNED",
 ];
 /* TODO */
 /* Check to see how to address the + and - Unary operators */
@@ -180,7 +199,7 @@ const isNumber = (character) => {
     return retVal;
 };
 const isCompilerDirective = (character) => {
-    const retVal = COMPILER_DIRECTIVE.includes(character);
+    const retVal = DIRECTIVE.test(character);
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
@@ -234,12 +253,12 @@ const isComment = (character) => {
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
-const isBitExtraction = (character) => {
+const isAngleBrackets = (character) => {
     const retVal = isOpeneningBit(character) || isClosingBit(character);
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
-const isIndex = (character) => {
+const isSquareBrackets = (character) => {
     const retVal = isOpeneningIndex(character) || isClosingIndex(character);
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
@@ -259,6 +278,11 @@ const isKeyword = (word) => {
     log_1.default.write('DEBUG', `returned "${retVal}" for word ${word} , at ${cursor}`);
     return retVal;
 };
+const isDataType = (word) => {
+    const retVal = DATA_TYPES.includes(word);
+    log_1.default.write('DEBUG', `returned "${retVal}" for word ${word} , at ${cursor}`);
+    return retVal;
+};
 const isOperator = (character) => {
     const retVal = false;
     /*const retVal =  (ARITHMETIC_OPERATORS.includes(character) ||
@@ -273,11 +297,12 @@ exports.default = {
     getCharacter,
     getCharacters,
     getCursor,
+    isAngleBrackets,
     isComment,
     isClosingParenthesis,
     isCRLF,
     isCompilerDirective,
-    isIndex,
+    isDataType,
     isKeyword,
     isLetter,
     isNumber,
@@ -285,9 +310,9 @@ exports.default = {
     isOpeneningParenthesis,
     isParenthesis,
     isSingleLineComment,
+    isSquareBrackets,
     isQuote,
     isWhitespace,
-    isBitExtraction,
     peekCharacter,
     peekCharacterAt,
     peekCharacters,

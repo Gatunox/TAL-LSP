@@ -43,7 +43,10 @@ documents.onDidChangeContent(function handleContentChange(change) {
         log_1.default.write('DEBUG', `File system path: ${filePath}.`);
     }
     log_1.default.write('DEBUG', change.document.getText());
-    log_1.default.write('DEBUG', (0, tokenizer_1.default)(change.document.getText()));
+    const tokens = (0, tokenizer_1.default)(change.document.getText());
+    //  tokens.forEach((token: string) => log.write('DEBUG', JSON.stringify(token)));
+    tokens.forEach((token) => log_1.default.write('DEBUG', token));
+    //  log.write('DEBUG', JSON.stringify(tokenizer(change.document.getText())));
     log_1.default.write('DEBUG', `Time taken to tokenizer: ${Date.now() - startTime} ms`);
     //connection.window.showInformationMessage(
     //  "onDidChangeContent: " + change.document.uri + ", change: " + change.document.getText() 

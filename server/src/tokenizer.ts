@@ -5,8 +5,6 @@ const tokenize = (input: string) => {
   
     let tokens:any = [];
 
-    let loop = 0
-
     helpers.resetCursor();
     while (helpers.getCursor() < input.length) {
     
@@ -99,12 +97,26 @@ const tokenize = (input: string) => {
                 symbol += helpers.getCharacter(input);
             }
 
-            
             if (helpers.isKeyword(symbol)){
-                tokens.push({
-                    type: 'Keyword',
-                    value: symbol,
-                });    
+                if (helpers.isDataType(symbol)){
+                    tokens.push({
+                        type: 'DataType',
+                        value: symbol,
+                    });
+                }
+                else 
+                if (helpers.isOperator(symbol)){
+                    tokens.push({
+                        type: 'Operator',
+                        value: symbol,
+                    });
+                }
+                else {
+                    tokens.push({
+                        type: 'Keyword',
+                        value: symbol,
+                    });
+                }
             } else {
                 tokens.push({
                     type: 'Name',
@@ -133,14 +145,52 @@ const tokenize = (input: string) => {
             continue;
         }
         else
-        if (helpers.isParenthesis(helpers.peekCharacter(input))) {
+        if (helpers.isOperator(helpers.peekCharacter(input))){
+            let symbol = helpers.getCharacter(input);
+            log.write('DEBUG', `isLetter retuned true with symbol = ${symbol}.`)
+
+            /**
+             * We want to account for operator, so we look ahead in our
+             * string to see if the next character is also part of an multichar operator
+             *
+             */
+            while (helpers.getCursor() < input.length && helpers.isOperator(helpers.peekCharacter(input))) {
+                symbol += helpers.getCharacter(input);
+            }
+            if (helpers.isParenthesis(helpers.peekCharacter(symbol))) {
+                tokens.push({
+                    type: 'Parenthesis',
+                    value: helpers.getCharacter(input),
+                });
+                log.write('DEBUG', `isParenthesis Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
+                
+                continue;
+            }
+            else
+            if (helpers.isSquareBrackets(helpers.peekCharacter(symbol))) {
+                tokens.push({
+                    type: 'SquereBrackets',
+                    value: helpers.getCharacter(input),
+                });
+                log.write('DEBUG', `isIndex Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
+                
+                continue;
+            }
+            else    
+            if (helpers.isAngleBrackets(helpers.peekCharacter(symbol))) {
+                tokens.push({
+                    type: 'AngleBrackets',
+                    value: helpers.getCharacter(input),
+                });
+                log.write('DEBUG', `isIndex Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
+                
+                continue;
+            }
+            else
             tokens.push({
-                type: 'Parenthesis',
+                type: 'Operator',
                 value: helpers.getCharacter(input),
             });
-            log.write('DEBUG', `isParenthesis Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
-            
-            continue;
         }
         log.write('DEBUG', `skiping unknown character = ${helpers.getCharacter(input)}.`);
         //throw new Error(`${helpers.peekCharacter(input)} is not valid.`);

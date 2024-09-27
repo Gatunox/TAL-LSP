@@ -45,6 +45,7 @@ class Logger {
     log(logLevel, message) {
         if (!this.shouldLog(logLevel))
             return;
+        let isValidCallerName = true;
         const callerName = this.getCallerFunctionName(logLevel);
         // this.logg.write(`[${logLevel}] getCallerFunctionName returned: ${callerName}\n`);
         if (this.allowedProcs && this.allowedProcs.length > 0 && callerName) {
@@ -52,11 +53,14 @@ class Logger {
                 return;
         }
         if (typeof message === "object") {
+            if (!callerName || callerName === "anonymous function") {
+                isValidCallerName = false; // Flag to consider the variable invalid
+            }
             if (this.logIsOpen) {
-                this.logg.write(`[${logLevel}] ${callerName ? callerName + ' ' : ''}${JSON.stringify(message)}\n`);
+                this.logg.write(`[${logLevel}] ${isValidCallerName ? callerName + ' ' : ''}${JSON.stringify(message)}\n`);
             }
             else {
-                console.log(`[${logLevel}] ${callerName ? callerName + ' ' : ''}${JSON.stringify(message)}`);
+                console.log(`[${logLevel}] ${isValidCallerName ? callerName + ' ' : ''}${JSON.stringify(message)}`);
             }
         }
         else {

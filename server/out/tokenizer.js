@@ -4,7 +4,6 @@ const helper_1 = require("./helper");
 const log_1 = require("./log");
 const tokenize = (input) => {
     let tokens = [];
-    let loop = 0;
     helper_1.default.resetCursor();
     while (helper_1.default.getCursor() < input.length) {
         /* SKIP all spaces */
@@ -89,10 +88,24 @@ const tokenize = (input) => {
                 symbol += helper_1.default.getCharacter(input);
             }
             if (helper_1.default.isKeyword(symbol)) {
-                tokens.push({
-                    type: 'Keyword',
-                    value: symbol,
-                });
+                if (helper_1.default.isDataType(symbol)) {
+                    tokens.push({
+                        type: 'DataType',
+                        value: symbol,
+                    });
+                }
+                else if (helper_1.default.isOperator(symbol)) {
+                    tokens.push({
+                        type: 'Operator',
+                        value: symbol,
+                    });
+                }
+                else {
+                    tokens.push({
+                        type: 'Keyword',
+                        value: symbol,
+                    });
+                }
             }
             else {
                 tokens.push({
@@ -119,13 +132,46 @@ const tokenize = (input) => {
             log_1.default.write('DEBUG', `Quote Found = ${JSON.stringify(tokens[tokens.length - 1])}.`);
             continue;
         }
-        else if (helper_1.default.isParenthesis(helper_1.default.peekCharacter(input))) {
-            tokens.push({
-                type: 'Parenthesis',
-                value: helper_1.default.getCharacter(input),
-            });
-            log_1.default.write('DEBUG', `isParenthesis Found = ${JSON.stringify(tokens[tokens.length - 1])}.`);
-            continue;
+        else if (helper_1.default.isOperator(helper_1.default.peekCharacter(input))) {
+            let symbol = helper_1.default.getCharacter(input);
+            log_1.default.write('DEBUG', `isLetter retuned true with symbol = ${symbol}.`);
+            /**
+             * We want to account for operator, so we look ahead in our
+             * string to see if the next character is also part of an multichar operator
+             *
+             */
+            while (helper_1.default.getCursor() < input.length && helper_1.default.isOperator(helper_1.default.peekCharacter(input))) {
+                symbol += helper_1.default.getCharacter(input);
+            }
+            if (helper_1.default.isParenthesis(helper_1.default.peekCharacter(symbol))) {
+                tokens.push({
+                    type: 'Parenthesis',
+                    value: helper_1.default.getCharacter(input),
+                });
+                log_1.default.write('DEBUG', `isParenthesis Found = ${JSON.stringify(tokens[tokens.length - 1])}.`);
+                continue;
+            }
+            else if (helper_1.default.isSquareBrackets(helper_1.default.peekCharacter(symbol))) {
+                tokens.push({
+                    type: 'SquereBrackets',
+                    value: helper_1.default.getCharacter(input),
+                });
+                log_1.default.write('DEBUG', `isIndex Found = ${JSON.stringify(tokens[tokens.length - 1])}.`);
+                continue;
+            }
+            else if (helper_1.default.isAngleBrackets(helper_1.default.peekCharacter(symbol))) {
+                tokens.push({
+                    type: 'AngleBrackets',
+                    value: helper_1.default.getCharacter(input),
+                });
+                log_1.default.write('DEBUG', `isIndex Found = ${JSON.stringify(tokens[tokens.length - 1])}.`);
+                continue;
+            }
+            else
+                tokens.push({
+                    type: 'Operator',
+                    value: helper_1.default.getCharacter(input),
+                });
         }
         log_1.default.write('DEBUG', `skiping unknown character = ${helper_1.default.getCharacter(input)}.`);
         //throw new Error(`${helpers.peekCharacter(input)} is not valid.`);
