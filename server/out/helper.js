@@ -283,6 +283,11 @@ const isDataType = (word) => {
     log_1.default.write('DEBUG', `returned "${retVal}" for word ${word} , at ${cursor}`);
     return retVal;
 };
+const isDelimiter = (character) => {
+    const retVal = DELIMITER_SYMBOLS.some(delimiter => delimiter.includes(character));
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    return retVal;
+};
 const isOperator = (character) => {
     const retVal = false;
     /*const retVal =  (ARITHMETIC_OPERATORS.includes(character) ||
@@ -303,6 +308,7 @@ exports.default = {
     isCRLF,
     isCompilerDirective,
     isDataType,
+    isDelimiter,
     isKeyword,
     isLetter,
     isNumber,

@@ -147,7 +147,7 @@ const tokenize = (input: string) => {
         else
         if (helpers.isOperator(helpers.peekCharacter(input))){
             let symbol = helpers.getCharacter(input);
-            log.write('DEBUG', `isLetter retuned true with symbol = ${symbol}.`)
+            log.write('DEBUG', `isOperator retuned true with symbol = ${symbol}.`)
 
             /**
              * We want to account for operator, so we look ahead in our
@@ -172,7 +172,7 @@ const tokenize = (input: string) => {
                     type: 'SquereBrackets',
                     value: helpers.getCharacter(input),
                 });
-                log.write('DEBUG', `isIndex Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
+                log.write('DEBUG', `isSquareBrackets Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
                 
                 continue;
             }
@@ -182,7 +182,7 @@ const tokenize = (input: string) => {
                     type: 'AngleBrackets',
                     value: helpers.getCharacter(input),
                 });
-                log.write('DEBUG', `isIndex Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
+                log.write('DEBUG', `isAngleBrackets Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
                 
                 continue;
             }
@@ -191,6 +191,18 @@ const tokenize = (input: string) => {
                 type: 'Operator',
                 value: helpers.getCharacter(input),
             });
+        } if (helpers.isDelimiter(helpers.peekCharacter(input))){
+            let delimiter = helpers.getCharacter(input);
+            log.write('DEBUG', `isCompilerDirective retuned true with number = ${delimiter}.`)
+            while (helpers.getCursor() < input.length && helpers.isDelimiter(helpers.peekCharacter(input))) {
+                delimiter += helpers.getCharacter(input);
+            }
+            tokens.push({
+                type: 'Delimiter',
+                value: delimiter,
+            });
+            log.write('DEBUG', `Delimiter Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
+            continue;
         }
         log.write('DEBUG', `skiping unknown character = ${helpers.getCharacter(input)}.`);
         //throw new Error(`${helpers.peekCharacter(input)} is not valid.`);
