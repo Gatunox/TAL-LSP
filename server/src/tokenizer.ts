@@ -4,17 +4,16 @@ import log from './log';
 const tokenize = (input: string) => {
   
     let tokens:any = [];
+    let symbol = null;
 
     helpers.resetCursor();
     while (helpers.getCursor() < input.length) {
     
-        /* SKIP all spaces */
         if (helpers.isWhitespace(helpers.peekCharacter(input))) {
             helpers.getCharacter(input)
             continue;
         }
 
-        /* SKIP line if we find -- */
         if (helpers.isSingleLineComment(helpers.peekCharacters(input, 2))){
             let comment = helpers.getCharacters(input, 2);
             log.write('DEBUG', `isSingleLineComment retuned true with value = ${comment}.`)
@@ -141,68 +140,40 @@ const tokenize = (input: string) => {
                 value: string,
             });
             log.write('DEBUG', `Quote Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
-
             continue;
         }
-        else
-        if (helpers.isOperator(helpers.peekCharacter(input))){
-            let symbol = helpers.getCharacter(input);
-            log.write('DEBUG', `isOperator retuned true with symbol = ${symbol}.`)
+        else {
+            symbol = helpers.isSpecialCharacter(input)
+            log.write('DEBUG', `isSpecialCharacter retuned true with symbol = ${symbol}.`)
 
-            /**
-             * We want to account for operator, so we look ahead in our
-             * string to see if the next character is also part of an multichar operator
-             *
-             */
-            while (helpers.getCursor() < input.length && helpers.isOperator(helpers.peekCharacter(input))) {
-                symbol += helpers.getCharacter(input);
+            if (symbol) {
+                // Move cursor by the length of the matched symbol
+                helpers.moveCursor(symbol.length);
+                if (helpers.isDelimiter(symbol)) {
+                    tokens.push({
+                        type: 'Delimiter',
+                        value: symbol,
+                    });
+                    log.write('DEBUG', `isDelimiter Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)                    
+                    continue;
+                } 
+                if (helpers.isOperator(symbol)) {
+                    tokens.push({
+                        type: 'Operator',
+                        value: symbol,
+                    });
+                    log.write('DEBUG', `isOperator Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
+                    continue;
+                }
+                if (helpers.isCRLF(symbol)) {
+                    tokens.push({
+                        type: 'CRLF',
+                        value: symbol,
+                    });
+                    log.write('DEBUG', `isOperator Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
+                    continue;
+                }                
             }
-            if (helpers.isParenthesis(helpers.peekCharacter(symbol))) {
-                tokens.push({
-                    type: 'Parenthesis',
-                    value: helpers.getCharacter(input),
-                });
-                log.write('DEBUG', `isParenthesis Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
-                
-                continue;
-            }
-            else
-            if (helpers.isSquareBrackets(helpers.peekCharacter(symbol))) {
-                tokens.push({
-                    type: 'SquereBrackets',
-                    value: helpers.getCharacter(input),
-                });
-                log.write('DEBUG', `isSquareBrackets Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
-                
-                continue;
-            }
-            else    
-            if (helpers.isAngleBrackets(helpers.peekCharacter(symbol))) {
-                tokens.push({
-                    type: 'AngleBrackets',
-                    value: helpers.getCharacter(input),
-                });
-                log.write('DEBUG', `isAngleBrackets Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
-                
-                continue;
-            }
-            else
-            tokens.push({
-                type: 'Operator',
-                value: helpers.getCharacter(input),
-            });
-        } if (helpers.isDelimiter(helpers.peekCharacter(input))){
-            let delimiter = helpers.getCharacter(input);
-            log.write('DEBUG', `isCompilerDirective retuned true with number = ${delimiter}.`)
-            while (helpers.getCursor() < input.length && helpers.isDelimiter(helpers.peekCharacter(input))) {
-                delimiter += helpers.getCharacter(input);
-            }
-            tokens.push({
-                type: 'Delimiter',
-                value: delimiter,
-            });
-            log.write('DEBUG', `Delimiter Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
-            continue;
         }
         log.write('DEBUG', `skiping unknown character = ${helpers.getCharacter(input)}.`);
         //throw new Error(`${helpers.peekCharacter(input)} is not valid.`);

@@ -1,7 +1,7 @@
 import log from './log';
 
 const LETTER = /[a-zA-Z_^]/
-const WHITESPACE = /\s+/
+const WHITESPACE = /[ \t]+/;  // Matches spaces and tabs
 const NUMBER = /^[0-9]+$/
 const LINECOMMENT = /^--$/
 const CRLF = /\r\n/;
@@ -10,87 +10,26 @@ const DIRECTIVE = /\?/;
 /*********************************************************************************************************************************/
 /************************************************************  SYMBOLS  *********************************************************/
 /*********************************************************************************************************************************/
-const INDIRECTION_SYMBOLS             = [".",
-                                         ".EXT",
-                                         ".SG",
-                                        ];
-const BASE_ADDRESS_SYMBOLS            = ["'P'",
-                                         "'G'",
-                                         "'L'",
-                                         "'P'",
-                                         "'S'",
-                                         "'SG'",
-                                        ];
-const DELIMITER_SYMBOLS               = ["!",
-                                         "--",
-                                         ",",
-                                         "<",
-                                         ">",
-                                         ":",
-                                         "(",
-                                         ")",
-                                         "[",
-                                         "]",
-                                         "->",
-                                         "\"",
-                                         "=",
-                                         "#",
-                                         "'",
-                                         "$",
-                                         "?",                                 
-                                        ];                                        
+const INDIRECTION_SYMBOLS             = [".", ".EXT", ".SG", ];
+const BASE_ADDRESS_SYMBOLS            = ["'P'", "'G'", "'L'", "'P'", "'S'", "'SG'", ];
+const DELIMITER_SYMBOLS = ["!", "--", ",", ";", ".", "<", ">", ":", "(", ")", "[", "]", "->", "\"", "=", "#", "'", "$", "?"];
+
 /*********************************************************************************************************************************/
 /***********************************************************  OPERATORS  *********************************************************/
 /*********************************************************************************************************************************/
-const ASSIGMENT_OPERATORS             = [":="];
-const MOVE_OPERATORS                  = ["':='",
-                                         "'=:'",
-                                         "&" 
-                                        ];
-const LABEL_CASE_OPERATORS            = [".."];
-const REMOVE_INDIRECTION_OPERATOR     = ["@"];
-const REPETITION_OPERATOR             = ["*"];
-const TEMPLATE_STRUCTURE_OPERATOR     = ["(*)"];
-const FIXED_PARAMETET_TYPE_OPERATOR   = ["(*)"];
-const DEREFERECING_OPERATOR           = ["."];
-const BIT_FIELD_OPERATOR              = ["."];
-const BITS_SHIFT_OPERATORS            = ["<<",
-                                         ">>",
-                                         "'<<'",
-                                         "'>>'"
-                                        ];
-const ARITHMETIC_EXPRESION_OPERATORS  = ["+",
-                                         "-",
-                                         "*",
-                                         "/",
-                                         "'*'",
-                                         "'/'",
-                                         "'\\'",
-                                         "'+'",
-                                         "'–'",
-                                         "LOR",
-                                         "LAND",
-                                         "XOR"
-                                        ];
-const RELACTIONAL_EXPRESION_OPERATORS = ["<",
-                                         "=",
-                                         ">",
-                                         "<=",
-                                         ">=",
-                                         "<>",
-                                         "'<'",
-                                         "'='",
-                                         "'>'",
-                                         "'<='",
-                                         "'>='",
-                                         "'<>'" 
-                                        ];
-const BOOLEAN_EXPRESION_OPERATORS     = ["AND",
-                                         "OR",
-                                         "NOT",
-                                        ];
-
-
+const ASSIGMENT_OPERATORS = [":="];
+const MOVE_OPERATORS = ["':='", "'=:'", "&"];
+const LABEL_CASE_OPERATORS = [".."];
+const REMOVE_INDIRECTION_OPERATOR = ["@"];
+const REPETITION_OPERATOR = ["*"];
+const TEMPLATE_STRUCTURE_OPERATOR = ["(*)"];
+const FIXED_PARAM_TYPE_OPERATOR = ["(*)"];
+const DEREFERECING_OPERATOR = ["."];
+const BIT_FIELD_OPERATOR = ["."];
+const BIT_SHIFT_OPERATORS = ["<<", ">>", "'<<'", "'>>'"];
+const ARITHMETIC_EXPRESION_OPERATORS = ["+", "-", "*", "/", "'*'", "'/'", "'\\'", "'+'", "'–'", "LOR", "LAND", "XOR"];
+const RELACTIONAL_EXPRESION_OPERATORS = ["<", "=", ">", "<=", ">=", "<>", "'<'", "'='", "'>'", "'<='", "'>='", "'<>'"];
+const BOOLEAN_EXPRESION_OPERATORS = ["AND", "OR", "NOT"];                             
 /*********************************************************************************************************************************/
 /*********************************************************** DIRECTIVES **********************************************************/
 /*********************************************************************************************************************************/
@@ -141,6 +80,9 @@ const getCursor = function getCursor(): number {
 };
 const resetCursor = (): void => {
     cursor = 0;
+};
+const moveCursor = (length: number): void => {
+    cursor += length;
 };
 
 const skipCharacters = (input: string, numberOfCharacter: number ): void => {
@@ -291,15 +233,116 @@ const isDelimiter = (character: string): boolean => {
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
-const isOperator = (character: string): boolean => {
-    const retVal = false;
-    /*const retVal =  (ARITHMETIC_OPERATORS.includes(character) || 
-                     COMPARISON_OPERATORS.includes(character) || 
-                     ADDRES_OPERATORS.includes (character) ||
-                     BITS_OPERATORS.includes (character));
-                     */
+const isAssigmentOperator = (character: string): boolean => {
+    const retVal =  ASSIGMENT_OPERATORS.some(delimiter => delimiter.includes(character));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
+}
+const isMoveOperator = (character: string): boolean => {
+    const retVal =  MOVE_OPERATORS.some(delimiter => delimiter.includes(character));
+    log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
+    return retVal;
+}
+const isLabelCaseOperator = (character: string): boolean => {
+    const retVal =  LABEL_CASE_OPERATORS.some(delimiter => delimiter.includes(character));
+    log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
+    return retVal;
+}
+const isRemoveIndirectionOperator = (character: string): boolean => {
+    const retVal =  REMOVE_INDIRECTION_OPERATOR.some(delimiter => delimiter.includes(character));
+    log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
+    return retVal;
+}
+const isRepetitionOperator = (character: string): boolean => {
+    const retVal =  REPETITION_OPERATOR.some(delimiter => delimiter.includes(character));
+    log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
+    return retVal;
+}
+const isTemplateStructureOperator = (character: string): boolean => {
+    const retVal =  TEMPLATE_STRUCTURE_OPERATOR.some(delimiter => delimiter.includes(character));
+    log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
+    return retVal;
+}
+const isFixedParamTypeOperator = (character: string): boolean => {
+    const retVal =  FIXED_PARAM_TYPE_OPERATOR.some(delimiter => delimiter.includes(character));
+    log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
+    return retVal;
+}
+const isDereferencingOperator = (character: string): boolean => {
+    const retVal =  DEREFERECING_OPERATOR.some(delimiter => delimiter.includes(character));
+    log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
+    return retVal;
+}
+const isBitFieldOperator = (character: string): boolean => {
+    const retVal =  BIT_FIELD_OPERATOR.some(delimiter => delimiter.includes(character));
+    log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
+    return retVal;
+}
+const isBitShilfOperator = (character: string): boolean => {
+    const retVal =  BIT_SHIFT_OPERATORS.some(delimiter => delimiter.includes(character));
+    log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
+    return retVal;
+}
+const isArithmeticExpresionOperator = (character: string): boolean => {
+    const retVal =  ARITHMETIC_EXPRESION_OPERATORS.some(delimiter => delimiter.includes(character));
+    log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
+    return retVal;
+}
+const isRelationalExpresionOperator = (character: string): boolean => {
+    const retVal =  RELACTIONAL_EXPRESION_OPERATORS.some(delimiter => delimiter.includes(character));
+    log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
+    return retVal;
+}
+const isBooleanExpresionOperator = (character: string): boolean => {
+    const retVal =  BOOLEAN_EXPRESION_OPERATORS.some(delimiter => delimiter.includes(character));
+    log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
+    return retVal;
+}
+const isOperator = (character: string): boolean => {
+    const retVal =  (isDelimiter(character) ||
+                     isAssigmentOperator(character) || 
+                     isMoveOperator(character) || 
+                     isLabelCaseOperator(character) ||
+                     isRemoveIndirectionOperator(character) ||
+                     isRepetitionOperator(character) ||
+                     isTemplateStructureOperator(character) ||
+                     isFixedParamTypeOperator(character) ||
+                     isDereferencingOperator(character) ||
+                     isBitFieldOperator(character) ||
+                     isBitShilfOperator(character) ||
+                     isArithmeticExpresionOperator(character) ||
+                     isRelationalExpresionOperator(character)||
+                     isBooleanExpresionOperator(character)
+                    );
+    log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
+    return retVal;
+}
+const isSpecialCharacter = (input: string): string | null  => {
+    const symbols = [
+        '\r\n',
+        ...DELIMITER_SYMBOLS,
+        ...ASSIGMENT_OPERATORS,
+        ...MOVE_OPERATORS,
+        ...LABEL_CASE_OPERATORS,
+        ...REMOVE_INDIRECTION_OPERATOR,
+        ...REPETITION_OPERATOR,
+        ...TEMPLATE_STRUCTURE_OPERATOR,
+        ...FIXED_PARAM_TYPE_OPERATOR,
+        ...BIT_SHIFT_OPERATORS,
+        ...ARITHMETIC_EXPRESION_OPERATORS,
+        ...RELACTIONAL_EXPRESION_OPERATORS,
+        ...BOOLEAN_EXPRESION_OPERATORS
+    ];
+
+    // Sort symbols by length in descending order (longest match first)
+    symbols.sort((a, b) => b.length - a.length);
+
+    for (let symbol of symbols) {
+        if (input.startsWith(symbol, cursor)) {
+            return symbol;
+        }
+    }
+    return null;
 }
     
 
@@ -308,22 +351,37 @@ export default {
     getCharacters,
     getCursor,
     isAngleBrackets,
+    isArithmeticExpresionOperator,
+    isAssigmentOperator,
+    isBitFieldOperator,
+    isBitShilfOperator,
+    isBooleanExpresionOperator,
     isComment,
     isClosingParenthesis,
     isCRLF,
     isCompilerDirective,
     isDataType,
     isDelimiter,
+    isDereferencingOperator,
+    isFixedParamTypeOperator,
     isKeyword,
+    isLabelCaseOperator,
     isLetter,
+    isMoveOperator,
     isNumber,
     isOperator,
     isOpeneningParenthesis,
     isParenthesis,
+    isRelationalExpresionOperator,
+    isRemoveIndirectionOperator,
+    isRepetitionOperator,
     isSingleLineComment,
+    isSpecialCharacter,
     isSquareBrackets,
+    isTemplateStructureOperator,
     isQuote,
     isWhitespace,
+    moveCursor,
     peekCharacter,
     peekCharacterAt,
     peekCharacters,
