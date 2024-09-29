@@ -8,6 +8,7 @@ import {
 } from "vscode-languageserver/node";
 import * as path from 'path';
 import log from './log';
+import { Token } from './helper';
 
 import tokenizer from './tokenizer';
 
@@ -62,7 +63,7 @@ documents.onDidChangeContent(function handleContentChange(change) {
   log.write('DEBUG', change.document.getText());
   const tokens = tokenizer(change.document.getText());
 //  tokens.forEach((token: string) => log.write('DEBUG', JSON.stringify(token)));
-  tokens.forEach((token: string) => log.write('DEBUG', token));  
+  tokens.forEach((token: Token) => log.write('DEBUG', token));  
 //  log.write('DEBUG', JSON.stringify(tokenizer(change.document.getText())));
   log.write('DEBUG', `Time taken to tokenizer: ${Date.now() - startTime} ms`);
   

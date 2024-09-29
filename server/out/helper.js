@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.isSpecialCharacter = exports.isOperator = exports.isIndirection = exports.isBooleanExpresionOperator = exports.isRelationalExpresionOperator = exports.isArithmeticExpresionOperator = exports.isBitShilfOperator = exports.isBitFieldOperator = exports.isDereferencingOperator = exports.isFixedParamTypeOperator = exports.isTemplateStructureOperator = exports.isRepetitionOperator = exports.isRemoveIndirectionOperator = exports.isLabelCaseOperator = exports.isMoveOperator = exports.isAssigmentOperator = exports.isDelimiter = exports.isDataType = exports.isKeyword = exports.isQuote = exports.isParenthesis = exports.isSquareBrackets = exports.isAngleBrackets = exports.isComment = exports.isClosingBit = exports.isOpeneningBit = exports.isClosingIndex = exports.isOpeneningIndex = exports.isClosingParenthesis = exports.isOpeneningParenthesis = exports.isSingleLineComment = exports.isClosingComment = exports.isOpeneningComment = exports.isCompilerDirective = exports.isNumber = exports.isWhitespace = exports.isLetter = exports.isCRLF = exports.peekCharacters = exports.peekCharacterAt = exports.peekCharacter = exports.getLastValue = exports.getLastType = exports.getLastElement = exports.getCharacters = exports.getCharacter = exports.skipCharacters = exports.moveCursor = exports.resetCursor = exports.getCursor = void 0;
 const log_1 = require("./log");
 const LETTER = /[a-zA-Z_^]/;
 const WHITESPACE = /[ \t]+/; // Matches spaces and tabs
@@ -72,251 +73,332 @@ let cursor = 0;
 const getCursor = function getCursor() {
     return cursor;
 };
+exports.getCursor = getCursor;
 const resetCursor = () => {
     cursor = 0;
 };
+exports.resetCursor = resetCursor;
 const moveCursor = (length) => {
     cursor += length;
 };
+exports.moveCursor = moveCursor;
 const skipCharacters = (input, numberOfCharacter) => {
     do {
-        getCharacter(input);
+        (0, exports.getCharacter)(input);
     } while (numberOfCharacter-- > 0);
 };
+exports.skipCharacters = skipCharacters;
 const getCharacter = (input) => {
-    if (!(getCursor() < input.length))
+    if (!((0, exports.getCursor)() < input.length))
         return "";
     const character = input[cursor];
     log_1.default.write('DEBUG', `returned "${character}" at ${cursor}.`);
     cursor++;
     return character;
 };
+exports.getCharacter = getCharacter;
 const getCharacters = (input, numberOfCharacter) => {
-    if (!(getCursor() + numberOfCharacter < input.length))
+    if (!((0, exports.getCursor)() + numberOfCharacter < input.length))
         return "";
     const characters = input.substring(cursor, cursor + numberOfCharacter);
     log_1.default.write('DEBUG', `returned "${characters}", (${characters.length}), at ${cursor}, for ${numberOfCharacter}.`);
     cursor += numberOfCharacter;
     return characters;
 };
+exports.getCharacters = getCharacters;
+const getLastElement = (arr) => {
+    if (arr.length === 0) {
+        return undefined;
+    }
+    return arr[arr.length - 1];
+};
+exports.getLastElement = getLastElement;
+const getLastType = (arr) => {
+    const token = (0, exports.getLastElement)(arr);
+    log_1.default.write('DEBUG', `returned ${token.type}.`);
+    if (token) {
+        return token.type;
+    }
+    else {
+        return "";
+    }
+};
+exports.getLastType = getLastType;
+const getLastValue = (arr) => {
+    const token = (0, exports.getLastElement)(arr);
+    log_1.default.write('DEBUG', `returned ${token.value}.`);
+    if (token) {
+        return token.value;
+    }
+    else {
+        return "";
+    }
+};
+exports.getLastValue = getLastValue;
 const peekCharacter = (input) => {
-    if (!(getCursor() < input.length))
+    if (!((0, exports.getCursor)() < input.length))
         return "";
     const character = input[cursor];
     log_1.default.write('DEBUG', `returned "${character}" at ${cursor}.`);
     return character;
 };
+exports.peekCharacter = peekCharacter;
 const peekCharacterAt = (input, offsetCursor = 0) => {
-    if (!(getCursor() < input.length))
+    if (!((0, exports.getCursor)() < input.length))
         return "";
     let tempCursor = cursor + offsetCursor;
     const character = input.substring(tempCursor, tempCursor + 1);
     log_1.default.write('DEBUG', `returned "${character}" at ${tempCursor}.`);
     return character;
 };
+exports.peekCharacterAt = peekCharacterAt;
 const peekCharacters = (input, numberOfCharacter) => {
-    if (!(getCursor() + numberOfCharacter < input.length))
+    if (!((0, exports.getCursor)() + numberOfCharacter < input.length))
         return "";
     const characters = input.substring(cursor, cursor + numberOfCharacter);
     log_1.default.write('DEBUG', `returned "${characters}", (${characters.length}), at ${cursor}, for ${numberOfCharacter}.`);
     return characters;
 };
+exports.peekCharacters = peekCharacters;
 const isCRLF = (character) => {
     const retVal = CRLF.test(character);
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isCRLF = isCRLF;
 const isLetter = (character) => {
     const retVal = LETTER.test(character);
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isLetter = isLetter;
 const isWhitespace = (character) => {
     const retVal = WHITESPACE.test(character);
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isWhitespace = isWhitespace;
 const isNumber = (character) => {
     const retVal = NUMBER.test(character);
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isNumber = isNumber;
 const isCompilerDirective = (character) => {
     const retVal = DIRECTIVE.test(character);
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isCompilerDirective = isCompilerDirective;
 const isOpeneningComment = (character) => {
     const retVal = (character === "!");
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isOpeneningComment = isOpeneningComment;
 const isClosingComment = (character) => {
     const retVal = (character === "!");
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isClosingComment = isClosingComment;
 const isSingleLineComment = (character) => {
     const retVal = LINECOMMENT.test(character);
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isSingleLineComment = isSingleLineComment;
 const isOpeneningParenthesis = (character) => {
     const retVal = (character === "(");
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isOpeneningParenthesis = isOpeneningParenthesis;
 const isClosingParenthesis = (character) => {
     const retVal = (character === ")");
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isClosingParenthesis = isClosingParenthesis;
 const isOpeneningIndex = (character) => {
     const retVal = (character === "[");
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isOpeneningIndex = isOpeneningIndex;
 const isClosingIndex = (character) => {
     const retVal = (character === "]");
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isClosingIndex = isClosingIndex;
 const isOpeneningBit = (character) => {
     const retVal = (character === "<");
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isOpeneningBit = isOpeneningBit;
 const isClosingBit = (character) => {
     const retVal = (character === ">");
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isClosingBit = isClosingBit;
 const isComment = (character) => {
-    const retVal = isOpeneningComment(character) || isClosingComment(character);
+    const retVal = (0, exports.isOpeneningComment)(character) || (0, exports.isClosingComment)(character);
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isComment = isComment;
 const isAngleBrackets = (character) => {
-    const retVal = isOpeneningBit(character) || isClosingBit(character);
+    const retVal = (0, exports.isOpeneningBit)(character) || (0, exports.isClosingBit)(character);
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isAngleBrackets = isAngleBrackets;
 const isSquareBrackets = (character) => {
-    const retVal = isOpeneningIndex(character) || isClosingIndex(character);
+    const retVal = (0, exports.isOpeneningIndex)(character) || (0, exports.isClosingIndex)(character);
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isSquareBrackets = isSquareBrackets;
 const isParenthesis = (character) => {
-    const retVal = isOpeneningParenthesis(character) || isClosingParenthesis(character);
+    const retVal = (0, exports.isOpeneningParenthesis)(character) || (0, exports.isClosingParenthesis)(character);
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isParenthesis = isParenthesis;
 const isQuote = (character) => {
     const retVal = (character === '"');
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isQuote = isQuote;
 const isKeyword = (word) => {
     const retVal = KEYWORDS.includes(word);
     log_1.default.write('DEBUG', `returned "${retVal}" for word ${word} , at ${cursor}`);
     return retVal;
 };
+exports.isKeyword = isKeyword;
 const isDataType = (word) => {
     const retVal = DATA_TYPES.includes(word);
     log_1.default.write('DEBUG', `returned "${retVal}" for word ${word} , at ${cursor}`);
     return retVal;
 };
+exports.isDataType = isDataType;
 const isDelimiter = (character) => {
     const retVal = DELIMITER_SYMBOLS.some(delimiter => delimiter.includes(character));
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isDelimiter = isDelimiter;
 const isAssigmentOperator = (character) => {
     const retVal = ASSIGMENT_OPERATORS.some(delimiter => delimiter.includes(character));
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isAssigmentOperator = isAssigmentOperator;
 const isMoveOperator = (character) => {
     const retVal = MOVE_OPERATORS.some(delimiter => delimiter.includes(character));
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isMoveOperator = isMoveOperator;
 const isLabelCaseOperator = (character) => {
     const retVal = LABEL_CASE_OPERATORS.some(delimiter => delimiter.includes(character));
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isLabelCaseOperator = isLabelCaseOperator;
 const isRemoveIndirectionOperator = (character) => {
     const retVal = REMOVE_INDIRECTION_OPERATOR.some(delimiter => delimiter.includes(character));
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isRemoveIndirectionOperator = isRemoveIndirectionOperator;
 const isRepetitionOperator = (character) => {
     const retVal = REPETITION_OPERATOR.some(delimiter => delimiter.includes(character));
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isRepetitionOperator = isRepetitionOperator;
 const isTemplateStructureOperator = (character) => {
     const retVal = TEMPLATE_STRUCTURE_OPERATOR.some(delimiter => delimiter.includes(character));
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isTemplateStructureOperator = isTemplateStructureOperator;
 const isFixedParamTypeOperator = (character) => {
     const retVal = FIXED_PARAM_TYPE_OPERATOR.some(delimiter => delimiter.includes(character));
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isFixedParamTypeOperator = isFixedParamTypeOperator;
 const isDereferencingOperator = (character) => {
     const retVal = DEREFERECING_OPERATOR.some(delimiter => delimiter.includes(character));
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isDereferencingOperator = isDereferencingOperator;
 const isBitFieldOperator = (character) => {
     const retVal = BIT_FIELD_OPERATOR.some(delimiter => delimiter.includes(character));
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isBitFieldOperator = isBitFieldOperator;
 const isBitShilfOperator = (character) => {
     const retVal = BIT_SHIFT_OPERATORS.some(delimiter => delimiter.includes(character));
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isBitShilfOperator = isBitShilfOperator;
 const isArithmeticExpresionOperator = (character) => {
     const retVal = ARITHMETIC_EXPRESION_OPERATORS.some(delimiter => delimiter.includes(character));
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isArithmeticExpresionOperator = isArithmeticExpresionOperator;
 const isRelationalExpresionOperator = (character) => {
     const retVal = RELACTIONAL_EXPRESION_OPERATORS.some(delimiter => delimiter.includes(character));
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isRelationalExpresionOperator = isRelationalExpresionOperator;
 const isBooleanExpresionOperator = (character) => {
     const retVal = BOOLEAN_EXPRESION_OPERATORS.some(delimiter => delimiter.includes(character));
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
-const isOperator = (character) => {
-    const retVal = (isDelimiter(character) ||
-        isAssigmentOperator(character) ||
-        isMoveOperator(character) ||
-        isLabelCaseOperator(character) ||
-        isRemoveIndirectionOperator(character) ||
-        isRepetitionOperator(character) ||
-        isTemplateStructureOperator(character) ||
-        isFixedParamTypeOperator(character) ||
-        isDereferencingOperator(character) ||
-        isBitFieldOperator(character) ||
-        isBitShilfOperator(character) ||
-        isArithmeticExpresionOperator(character) ||
-        isRelationalExpresionOperator(character) ||
-        isBooleanExpresionOperator(character));
+exports.isBooleanExpresionOperator = isBooleanExpresionOperator;
+const isIndirection = (character) => {
+    const retVal = INDIRECTION_SYMBOLS.some(delimiter => delimiter.includes(character));
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
+exports.isIndirection = isIndirection;
+const isOperator = (character) => {
+    const retVal = ((0, exports.isDelimiter)(character) ||
+        (0, exports.isAssigmentOperator)(character) ||
+        (0, exports.isMoveOperator)(character) ||
+        (0, exports.isLabelCaseOperator)(character) ||
+        (0, exports.isRemoveIndirectionOperator)(character) ||
+        (0, exports.isRepetitionOperator)(character) ||
+        (0, exports.isTemplateStructureOperator)(character) ||
+        (0, exports.isFixedParamTypeOperator)(character) ||
+        (0, exports.isDereferencingOperator)(character) ||
+        (0, exports.isBitFieldOperator)(character) ||
+        (0, exports.isBitShilfOperator)(character) ||
+        (0, exports.isArithmeticExpresionOperator)(character) ||
+        (0, exports.isRelationalExpresionOperator)(character) ||
+        (0, exports.isBooleanExpresionOperator)(character));
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    return retVal;
+};
+exports.isOperator = isOperator;
 const isSpecialCharacter = (input) => {
     const symbols = [
         '\r\n',
+        ...INDIRECTION_SYMBOLS,
         ...DELIMITER_SYMBOLS,
         ...ASSIGMENT_OPERATORS,
         ...MOVE_OPERATORS,
@@ -339,46 +421,5 @@ const isSpecialCharacter = (input) => {
     }
     return null;
 };
-exports.default = {
-    getCharacter,
-    getCharacters,
-    getCursor,
-    isAngleBrackets,
-    isArithmeticExpresionOperator,
-    isAssigmentOperator,
-    isBitFieldOperator,
-    isBitShilfOperator,
-    isBooleanExpresionOperator,
-    isComment,
-    isClosingParenthesis,
-    isCRLF,
-    isCompilerDirective,
-    isDataType,
-    isDelimiter,
-    isDereferencingOperator,
-    isFixedParamTypeOperator,
-    isKeyword,
-    isLabelCaseOperator,
-    isLetter,
-    isMoveOperator,
-    isNumber,
-    isOperator,
-    isOpeneningParenthesis,
-    isParenthesis,
-    isRelationalExpresionOperator,
-    isRemoveIndirectionOperator,
-    isRepetitionOperator,
-    isSingleLineComment,
-    isSpecialCharacter,
-    isSquareBrackets,
-    isTemplateStructureOperator,
-    isQuote,
-    isWhitespace,
-    moveCursor,
-    peekCharacter,
-    peekCharacterAt,
-    peekCharacters,
-    resetCursor,
-    skipCharacters,
-};
+exports.isSpecialCharacter = isSpecialCharacter;
 //# sourceMappingURL=helper.js.map

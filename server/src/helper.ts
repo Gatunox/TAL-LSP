@@ -1,3 +1,4 @@
+import { integer } from 'vscode-languageserver';
 import log from './log';
 
 const LETTER = /[a-zA-Z_^]/
@@ -13,7 +14,6 @@ const DIRECTIVE = /\?/;
 const INDIRECTION_SYMBOLS             = [".", ".EXT", ".SG", ];
 const BASE_ADDRESS_SYMBOLS            = ["'P'", "'G'", "'L'", "'P'", "'S'", "'SG'", ];
 const DELIMITER_SYMBOLS = ["!", "--", ",", ";", ".", "<", ">", ":", "(", ")", "[", "]", "->", "\"", "=", "#", "'", "$", "?"];
-
 /*********************************************************************************************************************************/
 /***********************************************************  OPERATORS  *********************************************************/
 /*********************************************************************************************************************************/
@@ -75,230 +75,258 @@ const DATA_TYPES =  ["STRING",
 
 let cursor = 0;
 
-const getCursor = function getCursor(): number {
+export const getCursor = function getCursor(): number {
     return cursor;
 };
-const resetCursor = (): void => {
+export  const resetCursor = (): void => {
     cursor = 0;
 };
-const moveCursor = (length: number): void => {
+export const moveCursor = (length: number): void => {
     cursor += length;
 };
-
-const skipCharacters = (input: string, numberOfCharacter: number ): void => {
+export const skipCharacters = (input: string, numberOfCharacter: number ): void => {
     do {
         getCharacter(input);
     } while (numberOfCharacter-- > 0);
 };
-const getCharacter = (input: string): string => {
+export const getCharacter = (input: string): string => {
     if (!(getCursor() < input.length)) return "";
     const character = input[cursor];
     log.write('DEBUG', `returned "${character}" at ${cursor}.`)
     cursor++;
     return character;
 };
-const getCharacters = (input: string, numberOfCharacter: number ): string => {
+export const getCharacters = (input: string, numberOfCharacter: number ): string => {
     if (!(getCursor() + numberOfCharacter < input.length)) return "";
     const characters = input.substring(cursor, cursor + numberOfCharacter);
     log.write('DEBUG', `returned "${characters}", (${characters.length}), at ${cursor}, for ${numberOfCharacter}.`)
     cursor += numberOfCharacter;
     return characters;
 };
-const peekCharacter = (input: string): string => {
+export const getLastElement = (arr: Token[]): any | undefined => {
+    if (arr.length === 0) {
+        return undefined;  
+    }
+    return arr[arr.length - 1];  
+}
+export const getLastType = (arr: Token[]): string => {
+    const token = getLastElement(arr);
+    log.write('DEBUG', `returned ${token.type}.`)
+    if (token){
+        return token.type;  
+    } else {
+        return "";
+    }
+}
+export const getLastValue = (arr: Token[]): string => {
+    const token = getLastElement(arr);
+    log.write('DEBUG', `returned ${token.value}.`)
+    if (token){
+        return token.value;  
+    } else {
+        return "";
+    }
+}
+export const peekCharacter = (input: string): string => {
     if (!(getCursor() < input.length)) return "";
     const character = input[cursor];
     log.write('DEBUG', `returned "${character}" at ${cursor}.`)
     return character;
 };
-const peekCharacterAt = (input: string, offsetCursor: number = 0): string => {
+export const peekCharacterAt = (input: string, offsetCursor: number = 0): string => {
     if (!(getCursor() < input.length)) return "";
     let tempCursor = cursor + offsetCursor;
     const character = input.substring(tempCursor, tempCursor + 1);
     log.write('DEBUG', `returned "${character}" at ${tempCursor}.`)
     return character;
 };
-const peekCharacters = (input: string, numberOfCharacter: number ): string => {
+export const peekCharacters = (input: string, numberOfCharacter: number ): string => {
     if (!(getCursor() + numberOfCharacter < input.length)) return "";
     const characters = input.substring(cursor, cursor + numberOfCharacter);
     log.write('DEBUG', `returned "${characters}", (${characters.length}), at ${cursor}, for ${numberOfCharacter}.`)
     return characters;
 };
-const isCRLF = (character: string): boolean => {
+export const isCRLF = (character: string): boolean => {
     const retVal = CRLF.test(character);
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)
     return retVal;
 };
-const isLetter = (character: string): boolean => {
+export const isLetter = (character: string): boolean => {
     const retVal = LETTER.test(character);
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)
     return retVal;
 }
-const isWhitespace = (character: string): boolean => {
+export const isWhitespace = (character: string): boolean => {
     const retVal = WHITESPACE.test(character);
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)
     return retVal;
 }
-const isNumber = (character: string): boolean => {
+export const isNumber = (character: string): boolean => {
     const retVal = NUMBER.test(character);
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)
     return retVal;
 }
-const isCompilerDirective = (character: string): boolean => {
+export const isCompilerDirective = (character: string): boolean => {
     const retVal = DIRECTIVE.test(character);
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)
     return retVal;
 }
-const isOpeneningComment = (character: string): boolean => {
+export const isOpeneningComment = (character: string): boolean => {
     const retVal = (character === "!");
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)
     return retVal;
 }
-const isClosingComment = (character: string): boolean => {
+export const isClosingComment = (character: string): boolean => {
     const retVal = (character === "!");
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)
     return retVal;
 }
-const isSingleLineComment = (character: string): boolean => {
+export const isSingleLineComment = (character: string): boolean => {
     const retVal = LINECOMMENT.test(character);
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)
     return retVal;
 }
-const isOpeneningParenthesis = (character: string): boolean => {
+export const isOpeneningParenthesis = (character: string): boolean => {
     const retVal = (character === "(");
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)
     return retVal;
 }
-const isClosingParenthesis = (character: string): boolean => {
+export const isClosingParenthesis = (character: string): boolean => {
     const retVal = (character === ")");
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)
     return retVal;
 }
-const isOpeneningIndex = (character: string): boolean => {
+export const isOpeneningIndex = (character: string): boolean => {
     const retVal = (character === "[");
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)
     return retVal;
 }
-const isClosingIndex = (character: string): boolean => {
+export const isClosingIndex = (character: string): boolean => {
     const retVal = (character === "]");
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)
     return retVal;
 }
-const isOpeneningBit = (character: string): boolean => {
+export const isOpeneningBit = (character: string): boolean => {
     const retVal = (character === "<");
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)
     return retVal;
 }
-const isClosingBit = (character: string): boolean => {
+export const isClosingBit = (character: string): boolean => {
     const retVal = (character === ">");
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)
     return retVal;
 }
-const isComment = (character: string): boolean => {
+export const isComment = (character: string): boolean => {
     const retVal = isOpeneningComment(character) || isClosingComment(character);
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)
     return retVal;
 }
-const isAngleBrackets = (character: string): boolean => {
+export const isAngleBrackets = (character: string): boolean => {
     const retVal = isOpeneningBit(character) || isClosingBit(character);
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)
     return retVal;
 }
-const isSquareBrackets = (character: string): boolean => {
+export const isSquareBrackets = (character: string): boolean => {
     const retVal = isOpeneningIndex(character) || isClosingIndex(character);
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)
     return retVal;
 }
-const isParenthesis = (character: string): boolean => {
+export const isParenthesis = (character: string): boolean => {
     const retVal = isOpeneningParenthesis(character) || isClosingParenthesis(character);
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)
     return retVal;
 }
-const isQuote = (character: string): boolean => { 
+export const isQuote = (character: string): boolean => { 
     const retVal = (character === '"');
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)
     return retVal;
 }
-const isKeyword = (word: string): boolean =>{
+export const isKeyword = (word: string): boolean =>{
     const retVal = KEYWORDS.includes(word);
     log.write('DEBUG', `returned "${retVal}" for word ${word} , at ${cursor}`)
     return retVal;
 }
-const isDataType = (word: string): boolean => {
+export const isDataType = (word: string): boolean => {
     const retVal = DATA_TYPES.includes(word);
     log.write('DEBUG', `returned "${retVal}" for word ${word} , at ${cursor}`)
     return retVal;
 }
-const isDelimiter = (character: string): boolean => {
+export const isDelimiter = (character: string): boolean => {
     const retVal = DELIMITER_SYMBOLS.some(delimiter => delimiter.includes(character));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
-const isAssigmentOperator = (character: string): boolean => {
+export const isAssigmentOperator = (character: string): boolean => {
     const retVal =  ASSIGMENT_OPERATORS.some(delimiter => delimiter.includes(character));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
-const isMoveOperator = (character: string): boolean => {
+export const isMoveOperator = (character: string): boolean => {
     const retVal =  MOVE_OPERATORS.some(delimiter => delimiter.includes(character));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
-const isLabelCaseOperator = (character: string): boolean => {
+export const isLabelCaseOperator = (character: string): boolean => {
     const retVal =  LABEL_CASE_OPERATORS.some(delimiter => delimiter.includes(character));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
-const isRemoveIndirectionOperator = (character: string): boolean => {
+export const isRemoveIndirectionOperator = (character: string): boolean => {
     const retVal =  REMOVE_INDIRECTION_OPERATOR.some(delimiter => delimiter.includes(character));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
-const isRepetitionOperator = (character: string): boolean => {
+export const isRepetitionOperator = (character: string): boolean => {
     const retVal =  REPETITION_OPERATOR.some(delimiter => delimiter.includes(character));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
-const isTemplateStructureOperator = (character: string): boolean => {
+export const isTemplateStructureOperator = (character: string): boolean => {
     const retVal =  TEMPLATE_STRUCTURE_OPERATOR.some(delimiter => delimiter.includes(character));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
-const isFixedParamTypeOperator = (character: string): boolean => {
+export const isFixedParamTypeOperator = (character: string): boolean => {
     const retVal =  FIXED_PARAM_TYPE_OPERATOR.some(delimiter => delimiter.includes(character));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
-const isDereferencingOperator = (character: string): boolean => {
+export const isDereferencingOperator = (character: string): boolean => {
     const retVal =  DEREFERECING_OPERATOR.some(delimiter => delimiter.includes(character));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
-const isBitFieldOperator = (character: string): boolean => {
+export const isBitFieldOperator = (character: string): boolean => {
     const retVal =  BIT_FIELD_OPERATOR.some(delimiter => delimiter.includes(character));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
-const isBitShilfOperator = (character: string): boolean => {
+export const isBitShilfOperator = (character: string): boolean => {
     const retVal =  BIT_SHIFT_OPERATORS.some(delimiter => delimiter.includes(character));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
-const isArithmeticExpresionOperator = (character: string): boolean => {
+export const isArithmeticExpresionOperator = (character: string): boolean => {
     const retVal =  ARITHMETIC_EXPRESION_OPERATORS.some(delimiter => delimiter.includes(character));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
-const isRelationalExpresionOperator = (character: string): boolean => {
+export const isRelationalExpresionOperator = (character: string): boolean => {
     const retVal =  RELACTIONAL_EXPRESION_OPERATORS.some(delimiter => delimiter.includes(character));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
-const isBooleanExpresionOperator = (character: string): boolean => {
+export const isBooleanExpresionOperator = (character: string): boolean => {
     const retVal =  BOOLEAN_EXPRESION_OPERATORS.some(delimiter => delimiter.includes(character));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
-const isOperator = (character: string): boolean => {
+export const isIndirection = (character: string): boolean => {
+    const retVal = INDIRECTION_SYMBOLS.some(delimiter => delimiter.includes(character));
+    log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    return retVal;
+};
+export const isOperator = (character: string): boolean => {
     const retVal =  (isDelimiter(character) ||
                      isAssigmentOperator(character) || 
                      isMoveOperator(character) || 
@@ -317,9 +345,10 @@ const isOperator = (character: string): boolean => {
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
-const isSpecialCharacter = (input: string): string | null  => {
+export const isSpecialCharacter = (input: string): string | null  => {
     const symbols = [
         '\r\n',
+        ...INDIRECTION_SYMBOLS,
         ...DELIMITER_SYMBOLS,
         ...ASSIGMENT_OPERATORS,
         ...MOVE_OPERATORS,
@@ -345,46 +374,7 @@ const isSpecialCharacter = (input: string): string | null  => {
     return null;
 }
     
-
-export default {
-    getCharacter,
-    getCharacters,
-    getCursor,
-    isAngleBrackets,
-    isArithmeticExpresionOperator,
-    isAssigmentOperator,
-    isBitFieldOperator,
-    isBitShilfOperator,
-    isBooleanExpresionOperator,
-    isComment,
-    isClosingParenthesis,
-    isCRLF,
-    isCompilerDirective,
-    isDataType,
-    isDelimiter,
-    isDereferencingOperator,
-    isFixedParamTypeOperator,
-    isKeyword,
-    isLabelCaseOperator,
-    isLetter,
-    isMoveOperator,
-    isNumber,
-    isOperator,
-    isOpeneningParenthesis,
-    isParenthesis,
-    isRelationalExpresionOperator,
-    isRemoveIndirectionOperator,
-    isRepetitionOperator,
-    isSingleLineComment,
-    isSpecialCharacter,
-    isSquareBrackets,
-    isTemplateStructureOperator,
-    isQuote,
-    isWhitespace,
-    moveCursor,
-    peekCharacter,
-    peekCharacterAt,
-    peekCharacters,
-    resetCursor,
-    skipCharacters,
-}
+export type Token = {
+    type: string;
+    value: string | number;
+};

@@ -1,9 +1,10 @@
-import helpers from './helper';
+import * as helpers from './helper';
+import { Token } from './helper';
 import log from './log';
 
 const tokenize = (input: string) => {
   
-    let tokens:any = [];
+    let tokens:Token[] = [];
     let symbol = null;
 
     helpers.resetCursor();
@@ -16,7 +17,7 @@ const tokenize = (input: string) => {
 
         if (helpers.isSingleLineComment(helpers.peekCharacters(input, 2))){
             let comment = helpers.getCharacters(input, 2);
-            log.write('DEBUG', `isSingleLineComment retuned true with value = ${comment}.`)
+            log.write('DEBUG', `SingleLineComment retuned true with value = ${comment}.`)
             while (helpers.getCursor() < input.length && !helpers.isCRLF(helpers.peekCharacters(input, 2))) {
                 comment += helpers.getCharacter(input);
             }
@@ -24,13 +25,13 @@ const tokenize = (input: string) => {
                 comment += helpers.getCharacters(input, 2);
                 log.write('DEBUG', `CRLF Found`)
             }
-            log.write('DEBUG', `isSingleLineComment ingnoring: ${comment}.`)
+            log.write('DEBUG', `SingleLineComment ingnoring: ${comment}.`)
             continue;
         }
         else 
         if (helpers.isComment(helpers.peekCharacter(input))){  
             let comment = helpers.getCharacters(input, 2);
-            log.write('DEBUG', `isComment retuned true with value = ${comment}.`)
+            log.write('DEBUG', `Comment retuned true with value = ${comment}.`)
             while (helpers.getCursor() < input.length && 
                    !helpers.isComment(helpers.peekCharacter(input)) &&
                    !helpers.isCRLF(helpers.peekCharacters(input, 2))) {
@@ -44,13 +45,13 @@ const tokenize = (input: string) => {
                 }
                 log.write('DEBUG', `CRLF Found`)
             }
-            log.write('DEBUG', `isComment ingnoring: ${comment}.`)
+            log.write('DEBUG', `Comment ingnoring: ${comment}.`)
             continue;
         }
         /* SKIP line if we find ? */
         if (helpers.isCompilerDirective(helpers.peekCharacter(input))){ 
             let directive = helpers.getCharacter(input);
-            log.write('DEBUG', `isCompilerDirective retuned true with number = ${directive}.`)
+            log.write('DEBUG', `CompilerDirective retuned true with number = ${directive}.`)
 
             tokens.push({
                 type: 'Directive',
@@ -134,7 +135,7 @@ const tokenize = (input: string) => {
                 string += helpers.getCharacter(input);
             }
             let emdquote =  helpers.getCharacter(input)
-            log.write('DEBUG', `isQuote retuned true with symbol = ${emdquote}.`)
+            log.write('DEBUG', `Quote retuned true with symbol = ${emdquote}.`)
             tokens.push({
                 type: 'String',
                 value: string,
@@ -149,12 +150,31 @@ const tokenize = (input: string) => {
             if (symbol) {
                 // Move cursor by the length of the matched symbol
                 helpers.moveCursor(symbol.length);
+
+                if (symbol === ".") {
+                    if (helpers.isDataType(helpers.getLastValue(tokens))){
+                        tokens.push({
+                            type: 'Indirection',
+                            value: symbol,
+                        });
+                        log.write('DEBUG', `Indirection Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)   
+                        continue;
+                    } 
+                }
+                if (helpers.isIndirection(symbol)) {
+                    tokens.push({
+                        type: 'Indirection',
+                        value: symbol,
+                    });
+                    log.write('DEBUG', `Delimiter Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)                    
+                    continue;
+                } 
                 if (helpers.isDelimiter(symbol)) {
                     tokens.push({
                         type: 'Delimiter',
                         value: symbol,
                     });
-                    log.write('DEBUG', `isDelimiter Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)                    
+                    log.write('DEBUG', `Delimiter Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)                    
                     continue;
                 } 
                 if (helpers.isOperator(symbol)) {
@@ -162,7 +182,7 @@ const tokenize = (input: string) => {
                         type: 'Operator',
                         value: symbol,
                     });
-                    log.write('DEBUG', `isOperator Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
+                    log.write('DEBUG', `Operator Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
                     continue;
                 }
                 if (helpers.isCRLF(symbol)) {
@@ -170,7 +190,7 @@ const tokenize = (input: string) => {
                         type: 'CRLF',
                         value: symbol,
                     });
-                    log.write('DEBUG', `isOperator Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
+                    log.write('DEBUG', `Operator Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
                     continue;
                 }                
             }
