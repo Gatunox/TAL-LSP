@@ -242,87 +242,87 @@ export const isQuote = (character: string): boolean => {
     return retVal;
 }
 export const isKeyword = (word: string): boolean =>{
-    const retVal = KEYWORDS.includes(word);
+    const retVal = KEYWORDS.some(delimiter => delimiter.toLowerCase().includes(word.toLowerCase()));
     log.write('DEBUG', `returned "${retVal}" for word ${word} , at ${cursor}`)
     return retVal;
 }
 export const isDataType = (word: string): boolean => {
-    const retVal = DATA_TYPES.includes(word);
+    const retVal = DATA_TYPES.some(delimiter => delimiter.toLowerCase().includes(word.toLowerCase()));
     log.write('DEBUG', `returned "${retVal}" for word ${word} , at ${cursor}`)
     return retVal;
 }
 export const isDelimiter = (character: string): boolean => {
-    const retVal = DELIMITER_SYMBOLS.some(delimiter => delimiter.includes(character));
+    const retVal = DELIMITER_SYMBOLS.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
 export const isAssigmentOperator = (character: string): boolean => {
-    const retVal =  ASSIGMENT_OPERATORS.some(delimiter => delimiter.includes(character));
+    const retVal =  ASSIGMENT_OPERATORS.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
 export const isMoveOperator = (character: string): boolean => {
-    const retVal =  MOVE_OPERATORS.some(delimiter => delimiter.includes(character));
+    const retVal =  MOVE_OPERATORS.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
 export const isLabelCaseOperator = (character: string): boolean => {
-    const retVal =  LABEL_CASE_OPERATORS.some(delimiter => delimiter.includes(character));
+    const retVal =  LABEL_CASE_OPERATORS.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
 export const isRemoveIndirectionOperator = (character: string): boolean => {
-    const retVal =  REMOVE_INDIRECTION_OPERATOR.some(delimiter => delimiter.includes(character));
+    const retVal =  REMOVE_INDIRECTION_OPERATOR.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
 export const isRepetitionOperator = (character: string): boolean => {
-    const retVal =  REPETITION_OPERATOR.some(delimiter => delimiter.includes(character));
+    const retVal =  REPETITION_OPERATOR.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
 export const isTemplateStructureOperator = (character: string): boolean => {
-    const retVal =  TEMPLATE_STRUCTURE_OPERATOR.some(delimiter => delimiter.includes(character));
+    const retVal =  TEMPLATE_STRUCTURE_OPERATOR.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
 export const isFixedParamTypeOperator = (character: string): boolean => {
-    const retVal =  FIXED_PARAM_TYPE_OPERATOR.some(delimiter => delimiter.includes(character));
+    const retVal =  FIXED_PARAM_TYPE_OPERATOR.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
 export const isDereferencingOperator = (character: string): boolean => {
-    const retVal =  DEREFERECING_OPERATOR.some(delimiter => delimiter.includes(character));
+    const retVal =  DEREFERECING_OPERATOR.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
 export const isBitFieldOperator = (character: string): boolean => {
-    const retVal =  BIT_FIELD_OPERATOR.some(delimiter => delimiter.includes(character));
+    const retVal =  BIT_FIELD_OPERATOR.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
 export const isBitShilfOperator = (character: string): boolean => {
-    const retVal =  BIT_SHIFT_OPERATORS.some(delimiter => delimiter.includes(character));
+    const retVal =  BIT_SHIFT_OPERATORS.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
 export const isArithmeticExpresionOperator = (character: string): boolean => {
-    const retVal =  ARITHMETIC_EXPRESION_OPERATORS.some(delimiter => delimiter.includes(character));
+    const retVal =  ARITHMETIC_EXPRESION_OPERATORS.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
 export const isRelationalExpresionOperator = (character: string): boolean => {
-    const retVal =  RELACTIONAL_EXPRESION_OPERATORS.some(delimiter => delimiter.includes(character));
+    const retVal =  RELACTIONAL_EXPRESION_OPERATORS.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
 export const isBooleanExpresionOperator = (character: string): boolean => {
-    const retVal =  BOOLEAN_EXPRESION_OPERATORS.some(delimiter => delimiter.includes(character));
+    const retVal =  BOOLEAN_EXPRESION_OPERATORS.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`)                     
     return retVal;
 }
 export const isIndirection = (character: string): boolean => {
-    const retVal = INDIRECTION_SYMBOLS.some(delimiter => delimiter.includes(character));
+    const retVal = INDIRECTION_SYMBOLS.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
     log.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
     return retVal;
 };
@@ -367,7 +367,7 @@ export const isSpecialCharacter = (input: string): string | null  => {
     symbols.sort((a, b) => b.length - a.length);
 
     for (let symbol of symbols) {
-        if (input.startsWith(symbol, cursor)) {
+        if (input.toLowerCase().startsWith(symbol.toLowerCase(), cursor)) {
             return symbol;
         }
     }
