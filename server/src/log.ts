@@ -18,7 +18,8 @@ class Logger {
     private allowedProcs?: string[];
 
     constructor(options: LoggerOptions) {
-        
+    
+
         const startTime = Date.now();
 
         this.level = options.level;

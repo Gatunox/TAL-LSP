@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isSpecialCharacter = exports.isOperator = exports.isIndirection = exports.isBooleanExpresionOperator = exports.isRelationalExpresionOperator = exports.isArithmeticExpresionOperator = exports.isBitShilfOperator = exports.isBitFieldOperator = exports.isDereferencingOperator = exports.isFixedParamTypeOperator = exports.isTemplateStructureOperator = exports.isRepetitionOperator = exports.isRemoveIndirectionOperator = exports.isLabelCaseOperator = exports.isMoveOperator = exports.isAssigmentOperator = exports.isDelimiter = exports.isDataType = exports.isKeyword = exports.isQuote = exports.isParenthesis = exports.isSquareBrackets = exports.isAngleBrackets = exports.isComment = exports.isClosingBit = exports.isOpeneningBit = exports.isClosingIndex = exports.isOpeneningIndex = exports.isClosingParenthesis = exports.isOpeneningParenthesis = exports.isSingleLineComment = exports.isClosingComment = exports.isOpeneningComment = exports.isCompilerDirective = exports.isNumber = exports.isWhitespace = exports.isLetter = exports.isCRLF = exports.peekCharacters = exports.peekCharacterAt = exports.peekCharacter = exports.getLastValue = exports.getLastType = exports.getLastElement = exports.getCharacters = exports.getCharacter = exports.skipCharacters = exports.moveCursor = exports.resetCursor = exports.getCursor = void 0;
+exports.isIndirection = exports.isBooleanExpresionOperator = exports.isRelationalExpresionOperator = exports.isArithmeticExpresionOperator = exports.isBitShilfOperator = exports.isBitFieldOperator = exports.isDereferencingOperator = exports.isFixedParamTypeOperator = exports.isTemplateStructureOperator = exports.isRepetitionOperator = exports.isRemoveIndirectionOperator = exports.isLabelCaseOperator = exports.isMoveOperator = exports.isAssigmentOperator = exports.isDelimiter = exports.isDataType = exports.isKeyword = exports.isQuote = exports.isParenthesis = exports.isSquareBrackets = exports.isAngleBrackets = exports.isComment = exports.isClosingBit = exports.isOpeneningBit = exports.isClosingIndex = exports.isOpeneningIndex = exports.isClosingParenthesis = exports.isOpeneningParenthesis = exports.isSingleLineComment = exports.isClosingComment = exports.isOpeneningComment = exports.isStandarFucntions = exports.isCompilerDirective = exports.isCompilerDirectiveLine = exports.isNumber = exports.isWhitespace = exports.isLetter = exports.isNewLine = exports.peekCharacters = exports.peekCharacterAt = exports.peekCharacter = exports.getLastValue = exports.getLastType = exports.getLastElement = exports.getCharacters = exports.getCharacter = exports.skipCharacters = exports.moveCursor = exports.resetCursor = exports.getCursor = void 0;
+exports.isSpecialCharacter = exports.isOperator = void 0;
 const log_1 = require("./log");
 const LETTER = /[a-zA-Z_^]/;
 const WHITESPACE = /[ \t]+/; // Matches spaces and tabs
@@ -11,7 +12,7 @@ const DIRECTIVE = /\?/;
 /*********************************************************************************************************************************/
 /************************************************************  SYMBOLS  *********************************************************/
 /*********************************************************************************************************************************/
-const INDIRECTION_SYMBOLS = [".", ".EXT", ".SG",];
+const INDIRECTION_SYMBOLS = [".", ".EXT ", ".SG ",];
 const BASE_ADDRESS_SYMBOLS = ["'P'", "'G'", "'L'", "'P'", "'S'", "'SG'",];
 const DELIMITER_SYMBOLS = ["!", "--", ",", ";", ".", "<", ">", ":", "(", ")", "[", "]", "->", "\"", "=", "#", "'", "$", "?"];
 /*********************************************************************************************************************************/
@@ -33,7 +34,7 @@ const BOOLEAN_EXPRESION_OPERATORS = ["AND", "OR", "NOT"];
 /*********************************************************************************************************************************/
 /*********************************************************** DIRECTIVES **********************************************************/
 /*********************************************************************************************************************************/
-const DIRECTIVES = ["ABORT", "NOABORT", "ABSLIST", "NOABSLIST", "ASSERTION", "BEGINCOMPILATION",
+const COMPILER_DIRECTIVES = ["ABORT", "NOABORT", "ABSLIST", "NOABSLIST", "ASSERTION", "BEGINCOMPILATION",
     "CHECEK", "NOCHECK", "PUSHCHECK", "POPCHECK", "CODE", "NOCODE",
     "PUSHCODE", "POPCODE", "COLUMNS", "COMPACT", "NOCOMPACT", "CPU",
     "CROSSREF", "NOCROSSREF", "DATAPAGES", "DECS", "DEFEXPAND", "NODEFEXPAND",
@@ -49,7 +50,7 @@ const DIRECTIVES = ["ABORT", "NOABORT", "ABSLIST", "NOABSLIST", "ASSERTION", "BE
 /***********************************************************  KEYWORDS  **********************************************************/
 /*********************************************************************************************************************************/
 const KEYWORDS = ["AND", "DO", "FORWARD", "MAIN", "RETURN", "TO",
-    "ASEERT", "DOWMTO", "GOTO", "NOT", "RSCAN", "UNSIGNED",
+    "ASSERT", "DOWMTO", "GOTO", "NOT", "RSCAN", "UNSIGNED",
     "BEGIN", "DROP", "IF", "OF", "SCAN", "UNTIL",
     "BY", "ELSE", "INT", "OR", "STACK", "USE",
     "CALL", "END", "INTERRUPT", "OTHERWISE", "STORE", "VARIABLE",
@@ -66,6 +67,17 @@ const DATA_TYPES = ["STRING",
     "FIXED",
     "REAL",
     "UNSIGNED",
+];
+/*********************************************************************************************************************************/
+/****************************************************** STANDAR FUNCIOTNS  **********************************************************/
+/*********************************************************************************************************************************/
+const STANDARD_FUNCTIONS = ["$ABS", "$ALPHA", "$BITLENGTH", "$BITOFFSET", "$CARRY",
+    "$COMP", "$DBL", "$DBLL", "$DBLR", "$DFIX", "$EFLT", "$EFLTR", "$FIX",
+    "$FIXD", "$FIXI", "$FIXL", "$FIXR", "$FLT", "$FLTR", "$HIGH", "$IFIX",
+    "$INT", "$INTR", "LADR", "$LEN", "$LFIX", "$LMAX", "$LMIN", "$MAX",
+    "$MIN", "$NUMERIC", "$OCCURS", "$OFFSET", "$OPTIONAL", "OVERFLOW",
+    "$PARAM", "$POINT", "$READCLOCK", "$RP", "$SCALE", "$SPECIAL",
+    "$TYPE", "$UDBL", "$USERCODE", "$XADR"
 ];
 /* TODO */
 /* Check to see how to address the + and - Unary operators */
@@ -160,219 +172,232 @@ const peekCharacters = (input, numberOfCharacter) => {
     return characters;
 };
 exports.peekCharacters = peekCharacters;
-const isCRLF = (character) => {
-    const retVal = CRLF.test(character);
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+const isNewLine = (text) => {
+    log_1.default.write('DEBUG', `text = ${text}, at ${cursor}`);
+    const retVal = CRLF.test(text);
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${text}, at ${cursor}`);
     return retVal;
 };
-exports.isCRLF = isCRLF;
+exports.isNewLine = isNewLine;
 const isLetter = (character) => {
     const retVal = LETTER.test(character);
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isLetter = isLetter;
 const isWhitespace = (character) => {
     const retVal = WHITESPACE.test(character);
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isWhitespace = isWhitespace;
 const isNumber = (character) => {
     const retVal = NUMBER.test(character);
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isNumber = isNumber;
-const isCompilerDirective = (character) => {
-    const retVal = DIRECTIVE.test(character);
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+const isCompilerDirectiveLine = (word) => {
+    const retVal = DIRECTIVE.test(word);
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${word}, at ${cursor}`);
+    return retVal;
+};
+exports.isCompilerDirectiveLine = isCompilerDirectiveLine;
+const isCompilerDirective = (word) => {
+    const retVal = COMPILER_DIRECTIVES.some(keyword => keyword.toLowerCase() === word.toLowerCase());
+    log_1.default.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`);
     return retVal;
 };
 exports.isCompilerDirective = isCompilerDirective;
+const isStandarFucntions = (word) => {
+    const retVal = STANDARD_FUNCTIONS.some(keyword => keyword.toLowerCase() === word.toLowerCase());
+    log_1.default.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`);
+    return retVal;
+};
+exports.isStandarFucntions = isStandarFucntions;
 const isOpeneningComment = (character) => {
     const retVal = (character === "!");
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isOpeneningComment = isOpeneningComment;
 const isClosingComment = (character) => {
     const retVal = (character === "!");
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isClosingComment = isClosingComment;
 const isSingleLineComment = (character) => {
     const retVal = LINECOMMENT.test(character);
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isSingleLineComment = isSingleLineComment;
 const isOpeneningParenthesis = (character) => {
     const retVal = (character === "(");
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isOpeneningParenthesis = isOpeneningParenthesis;
 const isClosingParenthesis = (character) => {
     const retVal = (character === ")");
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isClosingParenthesis = isClosingParenthesis;
 const isOpeneningIndex = (character) => {
     const retVal = (character === "[");
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isOpeneningIndex = isOpeneningIndex;
 const isClosingIndex = (character) => {
     const retVal = (character === "]");
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isClosingIndex = isClosingIndex;
 const isOpeneningBit = (character) => {
     const retVal = (character === "<");
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isOpeneningBit = isOpeneningBit;
 const isClosingBit = (character) => {
     const retVal = (character === ">");
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isClosingBit = isClosingBit;
 const isComment = (character) => {
     const retVal = (0, exports.isOpeneningComment)(character) || (0, exports.isClosingComment)(character);
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isComment = isComment;
 const isAngleBrackets = (character) => {
     const retVal = (0, exports.isOpeneningBit)(character) || (0, exports.isClosingBit)(character);
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isAngleBrackets = isAngleBrackets;
 const isSquareBrackets = (character) => {
     const retVal = (0, exports.isOpeneningIndex)(character) || (0, exports.isClosingIndex)(character);
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isSquareBrackets = isSquareBrackets;
 const isParenthesis = (character) => {
     const retVal = (0, exports.isOpeneningParenthesis)(character) || (0, exports.isClosingParenthesis)(character);
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isParenthesis = isParenthesis;
 const isQuote = (character) => {
     const retVal = (character === '"');
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isQuote = isQuote;
 const isKeyword = (word) => {
-    const retVal = KEYWORDS.some(delimiter => delimiter.toLowerCase().includes(word.toLowerCase()));
-    log_1.default.write('DEBUG', `returned "${retVal}" for word ${word} , at ${cursor}`);
+    const retVal = KEYWORDS.some(keyword => keyword.toLowerCase() === word.toLowerCase());
+    log_1.default.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`);
     return retVal;
 };
 exports.isKeyword = isKeyword;
 const isDataType = (word) => {
-    const retVal = DATA_TYPES.some(delimiter => delimiter.toLowerCase().includes(word.toLowerCase()));
-    log_1.default.write('DEBUG', `returned "${retVal}" for word ${word} , at ${cursor}`);
+    const retVal = DATA_TYPES.some(dataType => dataType.toLowerCase() === word.toLowerCase());
+    log_1.default.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`);
     return retVal;
 };
 exports.isDataType = isDataType;
 const isDelimiter = (character) => {
-    const retVal = DELIMITER_SYMBOLS.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    const retVal = DELIMITER_SYMBOLS.some(delimiter => delimiter.toLowerCase() === character.toLowerCase());
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isDelimiter = isDelimiter;
 const isAssigmentOperator = (character) => {
-    const retVal = ASSIGMENT_OPERATORS.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    const retVal = ASSIGMENT_OPERATORS.some(operator => operator.toLowerCase() === character.toLowerCase());
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isAssigmentOperator = isAssigmentOperator;
 const isMoveOperator = (character) => {
-    const retVal = MOVE_OPERATORS.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    const retVal = MOVE_OPERATORS.some(operator => operator.toLowerCase() === character.toLowerCase());
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isMoveOperator = isMoveOperator;
 const isLabelCaseOperator = (character) => {
-    const retVal = LABEL_CASE_OPERATORS.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    const retVal = LABEL_CASE_OPERATORS.some(operator => operator.toLowerCase() === character.toLowerCase());
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isLabelCaseOperator = isLabelCaseOperator;
 const isRemoveIndirectionOperator = (character) => {
-    const retVal = REMOVE_INDIRECTION_OPERATOR.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    const retVal = REMOVE_INDIRECTION_OPERATOR.some(operator => operator.toLowerCase() === character.toLowerCase());
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isRemoveIndirectionOperator = isRemoveIndirectionOperator;
 const isRepetitionOperator = (character) => {
-    const retVal = REPETITION_OPERATOR.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    const retVal = REPETITION_OPERATOR.some(operator => operator.toLowerCase() === character.toLowerCase());
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isRepetitionOperator = isRepetitionOperator;
 const isTemplateStructureOperator = (character) => {
-    const retVal = TEMPLATE_STRUCTURE_OPERATOR.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    const retVal = TEMPLATE_STRUCTURE_OPERATOR.some(operator => operator.toLowerCase() === character.toLowerCase());
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isTemplateStructureOperator = isTemplateStructureOperator;
 const isFixedParamTypeOperator = (character) => {
-    const retVal = FIXED_PARAM_TYPE_OPERATOR.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    const retVal = FIXED_PARAM_TYPE_OPERATOR.some(operator => operator.toLowerCase() === character.toLowerCase());
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isFixedParamTypeOperator = isFixedParamTypeOperator;
 const isDereferencingOperator = (character) => {
-    const retVal = DEREFERECING_OPERATOR.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    const retVal = DEREFERECING_OPERATOR.some(operator => operator.toLowerCase() === character.toLowerCase());
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isDereferencingOperator = isDereferencingOperator;
 const isBitFieldOperator = (character) => {
-    const retVal = BIT_FIELD_OPERATOR.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    const retVal = BIT_FIELD_OPERATOR.some(operator => operator.toLowerCase() === character.toLowerCase());
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isBitFieldOperator = isBitFieldOperator;
 const isBitShilfOperator = (character) => {
-    const retVal = BIT_SHIFT_OPERATORS.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    const retVal = BIT_SHIFT_OPERATORS.some(operator => operator.toLowerCase() === character.toLowerCase());
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isBitShilfOperator = isBitShilfOperator;
 const isArithmeticExpresionOperator = (character) => {
-    const retVal = ARITHMETIC_EXPRESION_OPERATORS.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    const retVal = ARITHMETIC_EXPRESION_OPERATORS.some(operator => operator.toLowerCase() === character.toLowerCase());
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isArithmeticExpresionOperator = isArithmeticExpresionOperator;
 const isRelationalExpresionOperator = (character) => {
-    const retVal = RELACTIONAL_EXPRESION_OPERATORS.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    const retVal = RELACTIONAL_EXPRESION_OPERATORS.some(operator => operator.toLowerCase() === character.toLowerCase());
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isRelationalExpresionOperator = isRelationalExpresionOperator;
 const isBooleanExpresionOperator = (character) => {
-    const retVal = BOOLEAN_EXPRESION_OPERATORS.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    const retVal = BOOLEAN_EXPRESION_OPERATORS.some(operator => operator.toLowerCase() === character.toLowerCase());
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isBooleanExpresionOperator = isBooleanExpresionOperator;
 const isIndirection = (character) => {
-    const retVal = INDIRECTION_SYMBOLS.some(delimiter => delimiter.toLowerCase().includes(character.toLowerCase()));
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    const retVal = INDIRECTION_SYMBOLS.some(indirection => indirection.toLowerCase() === character.toLowerCase());
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isIndirection = isIndirection;
@@ -391,7 +416,7 @@ const isOperator = (character) => {
         (0, exports.isArithmeticExpresionOperator)(character) ||
         (0, exports.isRelationalExpresionOperator)(character) ||
         (0, exports.isBooleanExpresionOperator)(character));
-    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character} , at ${cursor}`);
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
 exports.isOperator = isOperator;
@@ -416,10 +441,10 @@ const isSpecialCharacter = (input) => {
     symbols.sort((a, b) => b.length - a.length);
     for (let symbol of symbols) {
         if (input.toLowerCase().startsWith(symbol.toLowerCase(), cursor)) {
-            return symbol;
+            return symbol.length;
         }
     }
-    return null;
+    return 0;
 };
 exports.isSpecialCharacter = isSpecialCharacter;
 //# sourceMappingURL=helper.js.map

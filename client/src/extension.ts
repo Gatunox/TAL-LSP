@@ -1,5 +1,5 @@
 import * as path from "path";
-import { workspace, ExtensionContext } from "vscode";
+import * as vscode from 'vscode';
 
 import {
   LanguageClient,
@@ -10,7 +10,7 @@ import {
 
 let client: LanguageClient;
 
-export function activate(context: ExtensionContext) {
+export function activate(context: vscode.ExtensionContext) {
   // The server is implemented in node
   const serverModule = context.asAbsolutePath(
     path.join("server", "out", "server.js")
@@ -29,10 +29,10 @@ export function activate(context: ExtensionContext) {
   // Options to control the language client
   const clientOptions: LanguageClientOptions = {
     // Register the server for all documents by default
-    documentSelector: [{ scheme: "file", language: "*" }],
+    documentSelector: [{ scheme: 'file', language: '*' }],
     synchronize: {
       // Notify the server about file changes to '.clientrc files contained in the workspace
-      fileEvents: workspace.createFileSystemWatcher("**/.clientrc"),
+      fileEvents: vscode.workspace.createFileSystemWatcher("**/.clientrc"),
     },
   };
 
@@ -46,6 +46,18 @@ export function activate(context: ExtensionContext) {
 
   // Start the client. This will also launch the server
   client.start();
+
+  // // Trigger suggestions on each keystroke by executing the command to open suggestions
+  // vscode.workspace.onDidChangeTextDocument((event) => {
+  //   const editor = vscode.window.activeTextEditor;
+  //   
+  //   // Make sure we are working with the correct document
+  //   if (editor && editor.document === event.document) {
+  //       // Trigger the suggestion manually after each keystroke
+  //       vscode.commands.executeCommand('editor.action.triggerSuggest');
+  //   }
+  // });
+
 }
 
 export function deactivate(): Thenable<void> | undefined {
