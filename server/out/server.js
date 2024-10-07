@@ -4,6 +4,7 @@ const node_1 = require("vscode-languageserver/node");
 const path = require("path");
 const log_1 = require("./log");
 const tokenizer_1 = require("./tokenizer");
+const parser_1 = require("./parser");
 const vscode_languageserver_textdocument_1 = require("vscode-languageserver-textdocument");
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -14,30 +15,25 @@ const documents = new node_1.TextDocuments(vscode_languageserver_textdocument_1.
 let documentTokensCache = new Map();
 let documentSymbolsCache = new Map();
 // Function to filter relevant tokens (keywords, names, strings) and remove duplicates
-function filterAndCacheTokens(documentUri, version, tokens) {
-    // Use a Map to store tokens by their value to automatically exclude duplicates
-    const filteredTokensMap = new Map();
+function cacheTokens(documentUri, version, tokens) {
+    log_1.default.write('DEBUG', 'cacheTokens called:');
     tokens.forEach((token) => {
-        log_1.default.write('DEBUG', `Token: ${token.type}, value: ${token.value}, line: ${token.line} [${token.startCharacter}:${token.endCharacter}]`);
-        if (!filteredTokensMap.has(token.value)) {
-            filteredTokensMap.set(token.value, token);
-        }
+        log_1.default.write('DEBUG', token);
     });
-    // Convert the map back to an array to store in the cache
-    const filteredTokens = Array.from(filteredTokensMap.values());
-    // Log the cache content for verification
-    log_1.default.write('DEBUG', `Cached tokens for ${documentUri}: ${JSON.stringify(filteredTokens)}`);
     // Cache the filtered tokens along with the document version
     documentTokensCache.set(documentUri, {
         version: version,
-        tokens: filteredTokens, // Store filtered tokens
+        tokens: tokens, // Store filtered tokens
     });
+    const symbols = (0, parser_1.default)(tokens);
+    filterAndCacheSymbos(documentUri, version, symbols);
 }
 function filterAndCacheSymbos(documentUri, version, symbolTable) {
+    log_1.default.write('DEBUG', 'filterAndCacheSymbos called:');
     // Use a Map to store tokens by their value to automatically exclude duplicates
     const filteredSymbolsMap = new Map();
     symbolTable.forEach((symbolEntry) => {
-        log_1.default.write('DEBUG', `Token: ${symbolEntry.type}, name: ${symbolEntry.name}, line: ${symbolEntry.line} [${symbolEntry.startChar}:${symbolEntry.endChar}]`);
+        log_1.default.write('DEBUG', symbolEntry);
         // log.write('DEBUG', `Token: ${token.type}, Value: ${token.value}, Position: ${token.position}`);
         if (!filteredSymbolsMap.has(symbolEntry.name)) {
             filteredSymbolsMap.set(symbolEntry.name, symbolEntry);
@@ -55,6 +51,7 @@ function filterAndCacheSymbos(documentUri, version, symbolTable) {
 }
 // A function to return completion items based on the tokens
 function generateCompletionItems(word, symbolTable) {
+    console.log('generateCompletionItems called:');
     return symbolTable.map((symbolEntry) => ({
         label: symbolEntry.name,
         kind: node_1.CompletionItemKind.Text,
@@ -71,7 +68,7 @@ function updateTokensForChange(documentUri, version, range, newText) {
             version: version,
             tokens: tokens, // Store filtered tokens
         });
-        filterAndCacheTokens(documentUri, version, tokens);
+        cacheTokens(documentUri, version, tokens);
         return;
     }
     const { tokens } = cachedData;
@@ -81,13 +78,13 @@ function updateTokensForChange(documentUri, version, range, newText) {
     const newTokens = (0, tokenizer_1.default)(newText);
     // Merge tokens and update the cache
     const mergedTokens = [...updatedTokens, ...newTokens];
-    filterAndCacheTokens(documentUri, version, mergedTokens);
+    cacheTokens(documentUri, version, mergedTokens);
 }
 function updateTokensForFullDocument(documentUri, version, newText) {
     const startTime = Date.now();
     const tokens = (0, tokenizer_1.default)(newText);
     // Tokenize the entire new document
-    filterAndCacheTokens(documentUri, version, tokens);
+    cacheTokens(documentUri, version, tokens);
     log_1.default.write('DEBUG', `Time taken to tokenizer: ${Date.now() - startTime} ms`);
 }
 function isTokenWithinRange(token, range) {
@@ -179,7 +176,7 @@ documents.onDidChangeContent(function handleContentChange(change) {
     }
     const startTime = Date.now();
     const tokens = (0, tokenizer_1.default)(document.getText());
-    filterAndCacheTokens(documentUri, documentVersion, tokens);
+    cacheTokens(documentUri, documentVersion, tokens);
     log_1.default.write('DEBUG', `Time taken to tokenizer: ${Date.now() - startTime} ms`);
     //    // Process each change
     //    contentChanges.forEach((change) => {
@@ -210,12 +207,17 @@ connection.onCompletion((params) => {
     const position = params.position;
     if (!document)
         return [];
+    console.log("paso1");
     // Get the tokens for this document from the cache
+    //const cachedData = documentSymbolsCache.get(documentUri);
     const cachedData = documentSymbolsCache.get(documentUri);
+    console.log("paso2");
     // If no tokens are cached, return 
     if (!cachedData)
         return [];
+    console.log("paso3");
     // Generate completion items based on the cached tokens
+    //return generateCompletionItems('', cachedData.symbolTable);
     return generateCompletionItems('', cachedData.symbolTable);
     // const messageString = JSON.stringify(params);
     // console.log('Content-Length:', Buffer.byteLength(messageString, 'utf8'), '\n');

@@ -42,37 +42,29 @@ let documentTokensCache = new Map<string, { version: number; tokens: Token[] }>(
 let documentSymbolsCache = new Map<string, { version: number; symbolTable: SymbolEntry[] }>();
 
 // Function to filter relevant tokens (keywords, names, strings) and remove duplicates
-function filterAndCacheTokens(documentUri: string, version: number, tokens: Token[]) {
-    // Use a Map to store tokens by their value to automatically exclude duplicates
-    const filteredTokensMap = new Map<string, Token>();
-
+function cacheTokens(documentUri: string, version: number, tokens: Token[]) {
+    log.write('DEBUG', 'cacheTokens called:');
+  
     tokens.forEach((token: Token) => {
-        log.write('DEBUG', `Token: ${token.type}, value: ${token.value}, line: ${token.line} [${token.startCharacter}:${token.endCharacter}]`);
-
-        if (!filteredTokensMap.has(token.value)) {
-            filteredTokensMap.set(token.value, token);
-        }
+        log.write('DEBUG', token);
     });
-
-    // Convert the map back to an array to store in the cache
-    const filteredTokens = Array.from(filteredTokensMap.values());
-
-    // Log the cache content for verification
-    log.write('DEBUG', `Cached tokens for ${documentUri}: ${JSON.stringify(filteredTokens)}`);
 
     // Cache the filtered tokens along with the document version
     documentTokensCache.set(documentUri, {
         version: version,
-        tokens: filteredTokens,  // Store filtered tokens
+        tokens: tokens,  // Store filtered tokens
     });
+    const symbols = parseTokens(tokens);
+    filterAndCacheSymbos(documentUri, version, symbols);
 }
 
 function filterAndCacheSymbos(documentUri: string, version: number, symbolTable: SymbolEntry[]) {
+    log.write('DEBUG', 'filterAndCacheSymbos called:');
     // Use a Map to store tokens by their value to automatically exclude duplicates
     const filteredSymbolsMap = new Map<string, SymbolEntry>();
 
     symbolTable.forEach((symbolEntry: SymbolEntry) => {
-        log.write('DEBUG', `Token: ${symbolEntry.type}, name: ${symbolEntry.name}, line: ${symbolEntry.line} [${symbolEntry.startChar}:${symbolEntry.endChar}]`);
+        log.write('DEBUG', symbolEntry);
         // log.write('DEBUG', `Token: ${token.type}, Value: ${token.value}, Position: ${token.position}`);
 
         if (!filteredSymbolsMap.has(symbolEntry.name)) {
@@ -93,10 +85,9 @@ function filterAndCacheSymbos(documentUri: string, version: number, symbolTable:
     });
 }
 
-
-
 // A function to return completion items based on the tokens
 function generateCompletionItems(word: string, symbolTable: SymbolEntry[]): CompletionItem[] {
+    console.log('generateCompletionItems called:');
     return symbolTable.map((symbolEntry) => ({
         label: symbolEntry.name,
         kind: CompletionItemKind.Text,  // Use CompletionItemKind
@@ -104,6 +95,7 @@ function generateCompletionItems(word: string, symbolTable: SymbolEntry[]): Comp
         insertText: symbolEntry.name
     }));
 }
+
 
 function updateTokensForChange(
     documentUri: string,
@@ -120,7 +112,7 @@ function updateTokensForChange(
             version: version,
             tokens: tokens,  // Store filtered tokens
         });
-        filterAndCacheTokens(documentUri, version, tokens);
+        cacheTokens(documentUri, version, tokens);
         return;
     }
 
@@ -134,7 +126,7 @@ function updateTokensForChange(
     
     // Merge tokens and update the cache
     const mergedTokens = [...updatedTokens, ...newTokens];
-    filterAndCacheTokens(documentUri, version, mergedTokens);
+    cacheTokens(documentUri, version, mergedTokens);
 }
 
 function updateTokensForFullDocument(
@@ -145,7 +137,7 @@ function updateTokensForFullDocument(
     const startTime = Date.now();
     const tokens = tokenizer(newText);
     // Tokenize the entire new document
-    filterAndCacheTokens(documentUri, version, tokens);
+    cacheTokens(documentUri, version, tokens);
 
     log.write('DEBUG', `Time taken to tokenizer: ${Date.now() - startTime} ms`);
 }
@@ -253,7 +245,7 @@ documents.onDidChangeContent(function handleContentChange(change) {
  
     const startTime = Date.now();
     const tokens = tokenizer(document.getText());
-    filterAndCacheTokens(documentUri, documentVersion, tokens);
+    cacheTokens(documentUri, documentVersion, tokens);
     log.write('DEBUG', `Time taken to tokenizer: ${Date.now() - startTime} ms`);
  
 //    // Process each change
@@ -288,13 +280,18 @@ connection.onCompletion((params: TextDocumentPositionParams): CompletionItem[] =
 
     if (!document) return [];
 
+    console.log("paso1");
     // Get the tokens for this document from the cache
+    //const cachedData = documentSymbolsCache.get(documentUri);
     const cachedData = documentSymbolsCache.get(documentUri);
 
+    console.log("paso2");
     // If no tokens are cached, return 
     if (!cachedData) return [];
 
+    console.log("paso3");
     // Generate completion items based on the cached tokens
+    //return generateCompletionItems('', cachedData.symbolTable);
     return generateCompletionItems('', cachedData.symbolTable);
 
     // const messageString = JSON.stringify(params);
