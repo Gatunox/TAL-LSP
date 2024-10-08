@@ -14,6 +14,13 @@ const documents = new node_1.TextDocuments(vscode_languageserver_textdocument_1.
 // Map to cache tokens for each document
 let documentTokensCache = new Map();
 let documentSymbolsCache = new Map();
+function isNewLine(token) {
+    // Check if the token is on the same line as the range
+    if (token.type === 'NewLine') {
+        return true;
+    }
+    return false;
+}
 // Function to filter relevant tokens (keywords, names, strings) and remove duplicates
 function cacheTokens(documentUri, version, tokens) {
     log_1.default.write('DEBUG', 'cacheTokens called:');
@@ -25,6 +32,7 @@ function cacheTokens(documentUri, version, tokens) {
         version: version,
         tokens: tokens, // Store filtered tokens
     });
+    // const filterdTokens = tokens.filter((token: Token) => !isNewLine(token));
     const symbols = (0, parser_1.default)(tokens);
     filterAndCacheSymbos(documentUri, version, symbols);
 }
@@ -51,7 +59,7 @@ function filterAndCacheSymbos(documentUri, version, symbolTable) {
 }
 // A function to return completion items based on the tokens
 function generateCompletionItems(word, symbolTable) {
-    console.log('generateCompletionItems called:');
+    log_1.default.write('DEBUG', 'generateCompletionItems called:');
     return symbolTable.map((symbolEntry) => ({
         label: symbolEntry.name,
         kind: node_1.CompletionItemKind.Text,
@@ -121,7 +129,7 @@ connection.onNotification((method, params) => {
     // console.log( method, messageString, '\n');
 });
 connection.onInitialize((params) => {
-    console.log('onInitialize Received:');
+    log_1.default.write('DEBUG', 'onInitialize Received:');
     const result = {
         capabilities: {
             textDocumentSync: node_1.TextDocumentSyncKind.Incremental,
@@ -144,16 +152,16 @@ connection.onInitialize((params) => {
 });
 process.on('message', (message) => {
     // Assuming message is a string
-    // console.log('Message Received:');
+    console.log('Message Received:');
     // const messageString = JSON.stringify(message);
     // console.log('Content-Length:', Buffer.byteLength(messageString, 'utf8'), '\n');
     // console.log('', messageString, '\n');
     // Prepare a response message
-    const response = {
-        jsonrpc: "2.0",
-        id: message.id || null,
-        result: { success: true, data: "Response data" } // Your response data here
-    };
+    //const response = {
+    //    jsonrpc: "2.0",
+    //    id: message.id || null,  // Use the message's ID if present (for JSON-RPC handling)
+    //    result: { success: true, data: "Response data" } // Your response data here
+    //};
     // Send the response back using process.send()
     // if (process.send) {
     //     process.send(response);
@@ -201,7 +209,7 @@ documents.onDidChangeContent(function handleContentChange(change) {
 });
 // Handle completion request
 connection.onCompletion((params) => {
-    console.log('onCompletion Received:');
+    log_1.default.write('DEBUG', 'onCompletion Received:');
     const documentUri = params.textDocument.uri;
     const document = documents.get(documentUri);
     const position = params.position;

@@ -1,30 +1,103 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const log_1 = require("./log");
 let symbolTable = [];
 // Main Parsing Function
 function parseTokens(tokens) {
-    let i = 0;
+    log_1.default.write('DEBUG', 'parseTokens called:');
+    let index = 0;
     symbolTable.length = 0; // Clears the array
-    while (i < tokens.length) {
-        const currentToken = tokens[i];
-        if (currentToken.type === 'Keyword' && currentToken.value === 'PROC') {
-            // Parse function declaration
-            i = parseFunction(tokens, i, symbolTable); // Pass the current index and symbol table
+    while (tokens[index]) {
+        const currentToken = tokens[index];
+        // Parse comment
+        if (tokens[index] && currentToken.type === 'Comment') {
+            index = parseComment(tokens, index);
         }
-        else if (currentToken.type === 'Keyword' && isDataType(currentToken.value)) {
-            // Parse variable declaration
-            i = parseVariable(tokens, i, symbolTable); // Pass the current index and symbol table
+        // Parse commentLine
+        else if (tokens[index] && currentToken.type === 'CommentLine') {
+            index = parseCommentLine(tokens, index);
+            //}
+            // Parse directives at the start
+            // else if (tokens[index] && currentToken.type === 'DirectiveLine') {
+            //     parseDirectives(tokens, index);
         }
         else {
-            i++; // Move to the next token if it's not a function or variable
+            //log.write('DEBUG', 'Else Before:');
+            //log.write('DEBUG', tokens[index]);
+            index += 1;
+            //log.write('DEBUG', 'Esle after:');
+            //log.write('DEBUG', tokens[index]);
         }
     }
     return symbolTable;
 }
-// Helper to check if a token is a datatype (for variable declarations)
-function isDataType(value) {
-    const dataTypes = ['INT', 'STRING', 'FLOAT']; // You can expand this list
-    return dataTypes.includes(value);
+function parseComment(tokens, index) {
+    log_1.default.write('DEBUG', 'parseComment called:');
+    index += 1; // Move past the ! comment
+    while (tokens[index] && tokens[index].type != 'Comment' && tokens[index].type != 'NewLine') {
+        log_1.default.write('DEBUG', tokens[index]);
+        index += 1; // move to next token;
+    }
+    return index += 1;
+}
+function parseCommentLine(tokens, index) {
+    log_1.default.write('DEBUG', 'parseCommentLine called:');
+    index += 1; // Move past the ! comment
+    while (tokens[index] && tokens[index].type != 'NewLine') {
+        log_1.default.write('DEBUG', tokens[index]);
+        index += 1; // move to next token;
+    }
+    return index += 1;
+}
+function parseDirectives(tokens, index) {
+    log_1.default.write('DEBUG', 'parseDirectives called:');
+    index++; // Move past the ? directive LIne
+    while (tokens[index].type != 'NewLine') {
+        if (tokens[index].value.toUpperCase() === 'SOURCE') {
+            index++; // Move past the SOURCE KEYWORD
+            // parseSourceDirective(tokens, index);
+        }
+        else {
+            symbolTable.push({
+                name: tokens[index].value,
+                kind: 'Directive',
+                type: 'none',
+                line: tokens[index].line,
+                startChar: tokens[index].startCharacter,
+                endChar: tokens[index].endCharacter,
+            });
+            index++; // Move past the directive
+        }
+        index++; // Move past the comma;
+    }
+}
+function parseSourceDirective(tokens, index) {
+    const directive = tokens[index].value; // Directive value
+    const line = tokens[index].line; // Directive line
+    const sc = tokens[index].startCharacter; // Directive starts with '!'
+    const ec = tokens[index].endCharacter; // Directive starts with '!'
+    let source = '';
+    while (tokens[index] && !(tokens[index].type === 'Delimiter' && tokens[index].value === '(')) {
+        source += tokens[index].value;
+        index++; // Move to next token
+    }
+    index++; // Move past the open parentesis
+    while (tokens[index] && !(tokens[index].type === 'Delimiter' && tokens[index].value === ')')) {
+        if (tokens[index].value === "," ||
+            tokens[index].value === "?" ||
+            tokens[index].value === "<CR><LF>")
+            index++; // Move past the comma;
+        else {
+            symbolTable.push({
+                name: tokens[index].value,
+                kind: 'Function',
+                type: 'none',
+                line: tokens[index].line,
+                startChar: tokens[index].startCharacter,
+                endChar: tokens[index].endCharacter,
+            });
+        }
+    }
 }
 // Function to parse function declarations (e.g., "PROC myFunction")
 function parseFunction(tokens, i, symbolTable) {

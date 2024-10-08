@@ -41,6 +41,16 @@ const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 let documentTokensCache = new Map<string, { version: number; tokens: Token[] }>();
 let documentSymbolsCache = new Map<string, { version: number; symbolTable: SymbolEntry[] }>();
 
+
+function isNewLine(token: Token ): boolean {
+    // Check if the token is on the same line as the range
+    if (token.type === 'NewLine') {
+        return true;
+    }
+
+    return false;
+}
+
 // Function to filter relevant tokens (keywords, names, strings) and remove duplicates
 function cacheTokens(documentUri: string, version: number, tokens: Token[]) {
     log.write('DEBUG', 'cacheTokens called:');
@@ -54,6 +64,8 @@ function cacheTokens(documentUri: string, version: number, tokens: Token[]) {
         version: version,
         tokens: tokens,  // Store filtered tokens
     });
+
+    // const filterdTokens = tokens.filter((token: Token) => !isNewLine(token));
     const symbols = parseTokens(tokens);
     filterAndCacheSymbos(documentUri, version, symbols);
 }
@@ -87,7 +99,7 @@ function filterAndCacheSymbos(documentUri: string, version: number, symbolTable:
 
 // A function to return completion items based on the tokens
 function generateCompletionItems(word: string, symbolTable: SymbolEntry[]): CompletionItem[] {
-    console.log('generateCompletionItems called:');
+    log.write('DEBUG', 'generateCompletionItems called:');
     return symbolTable.map((symbolEntry) => ({
         label: symbolEntry.name,
         kind: CompletionItemKind.Text,  // Use CompletionItemKind
@@ -180,7 +192,7 @@ connection.onNotification((method, params) => {
 
 
 connection.onInitialize((params: InitializeParams) => {
-    console.log('onInitialize Received:');
+    log.write('DEBUG', 'onInitialize Received:');
     const result: InitializeResult = {
         capabilities: {
             textDocumentSync: TextDocumentSyncKind.Incremental,
@@ -206,18 +218,18 @@ connection.onInitialize((params: InitializeParams) => {
 
 process.on('message', (message: Message) => {
     // Assuming message is a string
-    // console.log('Message Received:');
+    console.log('Message Received:');
 
     // const messageString = JSON.stringify(message);
     // console.log('Content-Length:', Buffer.byteLength(messageString, 'utf8'), '\n');
     // console.log('', messageString, '\n');
 
     // Prepare a response message
-    const response = {
-        jsonrpc: "2.0",
-        id: message.id || null,  // Use the message's ID if present (for JSON-RPC handling)
-        result: { success: true, data: "Response data" } // Your response data here
-    };
+    //const response = {
+    //    jsonrpc: "2.0",
+    //    id: message.id || null,  // Use the message's ID if present (for JSON-RPC handling)
+    //    result: { success: true, data: "Response data" } // Your response data here
+    //};
 
     // Send the response back using process.send()
     // if (process.send) {
@@ -273,7 +285,7 @@ documents.onDidChangeContent(function handleContentChange(change) {
 
 // Handle completion request
 connection.onCompletion((params: TextDocumentPositionParams): CompletionItem[] => {
-    console.log('onCompletion Received:');
+    log.write('DEBUG', 'onCompletion Received:');
     const documentUri = params.textDocument.uri;
     const document = documents.get(documentUri);
     const position = params.position;

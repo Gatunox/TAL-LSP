@@ -185,7 +185,7 @@ const tokenize = (input) => {
                     log_1.default.write('DEBUG', `isSingleLineComment Found = ${JSON.stringify(tokens[tokens.length - 1])}.`);
                     continue;
                 }
-                if (helpers.isCompilerDirectiveLine(symbol)) {
+                if (helpers.isCompilerDirectiveLine(symbol) && startChar === 0) {
                     log_1.default.write('DEBUG', `CompilerDirective retuned true with number = ${symbol}.`);
                     tokens.push({
                         type: 'DirectiveLine',
