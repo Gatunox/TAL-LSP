@@ -18,20 +18,22 @@ function parseTokens(tokens: Token[]): SymbolEntry[] {
     let index = 0;
 
     symbolTable.length = 0;  // Clears the array
-    while (tokens[index]) {
-        const currentToken = tokens[index];
+    while (index < tokens.length ) {
+
+        if (!tokens[index]) continue;
+        log.write('DEBUG', tokens[index]);
 
         // Parse comment
-        if (tokens[index] && currentToken.type === 'Comment') {
+        if (tokens[index] && tokens[index].type === 'Comment') {
             index = parseComment(tokens, index);
         }
         // Parse commentLine
-        else if (tokens[index] && currentToken.type === 'CommentLine') {
+        else if (tokens[index] && tokens[index].type === 'CommentLine') {
             index = parseCommentLine(tokens, index);
-        //}
+        }
         // Parse directives at the start
-        // else if (tokens[index] && currentToken.type === 'DirectiveLine') {
-        //     parseDirectives(tokens, index);
+        else if (tokens[index] && tokens[index].type === 'DirectiveLine') {
+            index = parseDirectives(tokens, index);            
         } else {
             //log.write('DEBUG', 'Else Before:');
             //log.write('DEBUG', tokens[index]);
@@ -39,6 +41,7 @@ function parseTokens(tokens: Token[]): SymbolEntry[] {
             //log.write('DEBUG', 'Esle after:');
             //log.write('DEBUG', tokens[index]);
         }
+        console.log(tokens.length + "," +  index);
     }    
     return symbolTable;
 }
@@ -50,7 +53,11 @@ function parseComment(tokens: Token[], index: number): number {
         log.write('DEBUG', tokens[index]);
         index+=1;  // move to next token;
     }
-    return index+=1;
+    if (tokens[index] && tokens[index].type === 'Comment' && tokens[index].value === '!'){
+        log.write('DEBUG', tokens[index]);
+        index+=1;  // Move past the !
+    }
+    return index;
 }
 
 function parseCommentLine(tokens: Token[], index: number) {
@@ -60,16 +67,18 @@ function parseCommentLine(tokens: Token[], index: number) {
         log.write('DEBUG', tokens[index]);
         index+=1;  // move to next token;
     }
-    return index+=1;
+    return index;
 }
 
 function parseDirectives(tokens: Token[], index: number) {
-    log.write('DEBUG', 'parseDirectives called:');
-    index++; // Move past the ? directive LIne
-    while (tokens[index].type != 'NewLine') {
-        if (tokens[index].value.toUpperCase() === 'SOURCE') {
-            index++;  // Move past the SOURCE KEYWORD
-            // parseSourceDirective(tokens, index);
+    log.write('DEBUG', tokens[index]);
+    index+=1; // Move past the ! comment
+    while (tokens[index] && tokens[index].type != 'NewLine') {
+        log.write('DEBUG', tokens[index]);
+        if (tokens[index] && tokens[index].type === 'Comment') {
+            index = parseComment(tokens, index);
+        } else if (tokens[index].value.toUpperCase() === 'SOURCE') {
+            index = parseSourceDirective(tokens, index);
         } else {
             symbolTable.push({
                 name: tokens[index].value,
@@ -79,10 +88,19 @@ function parseDirectives(tokens: Token[], index: number) {
                 startChar: tokens[index].startCharacter,
                 endChar: tokens[index].endCharacter,
             });
-            index++;  // Move past the directive
-        }
-        index++;  // Move past the comma;
+            log.write('DEBUG', `symbolTable Added = ${JSON.stringify(symbolTable[symbolTable.length - 1])}.`)
+            index+=1;  // Move past the directive
+            if (tokens[index].type === 'Delimiter' && tokens[index].value === ','){
+                log.write('DEBUG', tokens[index]);
+                index+=1;  // Move past the comma;
+            }
+        }        
     }
+    if ( tokens[index] && tokens[index].type === 'NewLine' && tokens[index].value === '<CR><LF>'){
+        log.write('DEBUG', tokens[index]);
+        index+=1;  // Move past the newline
+    }
+    return index;
 }
 
 function parseSourceDirective(tokens: Token[], index: number) {
@@ -92,16 +110,19 @@ function parseSourceDirective(tokens: Token[], index: number) {
     const ec = tokens[index].endCharacter;      // Directive starts with '!'
 
     let source = '';
+    index+=1;  // Move past the SOURCE KEYWORD
     while (tokens[index] && !(tokens[index].type === 'Delimiter' && tokens[index].value === '(')) {
+        log.write('DEBUG', tokens[index]);
         source += tokens[index].value;
-        index++;  // Move to next token
+        index+=1;  // Move to next token
     }
-    index++;  // Move past the open parentesis
+    index+=1;  // Move past the open parentesis
     while (tokens[index] && !(tokens[index].type === 'Delimiter' && tokens[index].value === ')')) {
+        log.write('DEBUG', tokens[index]);
         if (tokens[index].value === "," ||
             tokens[index].value === "?" ||
             tokens[index].value === "<CR><LF>")
-            index++;  // Move past the comma;
+            index+=1;  // Move past the comma;
         else {
             symbolTable.push({
                 name: tokens[index].value,
@@ -111,8 +132,15 @@ function parseSourceDirective(tokens: Token[], index: number) {
                 startChar: tokens[index].startCharacter,
                 endChar: tokens[index].endCharacter,
             });
+            log.write('DEBUG', `symbolTable Added = ${JSON.stringify(symbolTable[symbolTable.length - 1])}.`)
+            index+=1;  // Move past the directive
         }
     }
+    if (tokens[index] && tokens[index].type === 'Delimiter' && tokens[index].value === ')'){
+        log.write('DEBUG', tokens[index]);
+        index+=1;  // Move past the )
+    }
+    return index;
 }
 
 // Function to parse function declarations (e.g., "PROC myFunction")
