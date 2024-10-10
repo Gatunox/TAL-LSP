@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const log_1 = require("./log");
 let symbolTable = [];
+let context = 'Global';
 // Main Parsing Function
 function parseTokens(tokens) {
     log_1.default.write('DEBUG', 'parseTokens called:');
@@ -19,7 +20,7 @@ function parseTokens(tokens) {
         else if (tokens[index] && tokens[index].type === 'CommentLine') {
             index = parseCommentLine(tokens, index);
         }
-        // Parse directives at the start
+        // Parse directives
         else if (tokens[index] && tokens[index].type === 'DirectiveLine') {
             index = parseDirectives(tokens, index);
         }
@@ -30,7 +31,6 @@ function parseTokens(tokens) {
             //log.write('DEBUG', 'Esle after:');
             //log.write('DEBUG', tokens[index]);
         }
-        console.log(tokens.length + "," + index);
     }
     return symbolTable;
 }
@@ -39,7 +39,7 @@ function parseComment(tokens, index) {
     index += 1; // Move past the ! comment
     while (tokens[index] && tokens[index].type != 'Comment' && tokens[index].type != 'NewLine') {
         log_1.default.write('DEBUG', tokens[index]);
-        index += 1; // move to next token;
+        index += 1; // move to next token; 
     }
     if (tokens[index] && tokens[index].type === 'Comment' && tokens[index].value === '!') {
         log_1.default.write('DEBUG', tokens[index]);
@@ -64,14 +64,19 @@ function parseDirectives(tokens, index) {
         if (tokens[index] && tokens[index].type === 'Comment') {
             index = parseComment(tokens, index);
         }
+        else if (tokens[index].value.toUpperCase() === 'TARGET') {
+            index = parseTargetDirective(tokens, index);
+        }
         else if (tokens[index].value.toUpperCase() === 'SOURCE') {
             index = parseSourceDirective(tokens, index);
         }
         else {
             symbolTable.push({
-                name: tokens[index].value,
                 kind: 'Directive',
                 type: 'none',
+                name: tokens[index].value,
+                value: '',
+                context: context,
                 line: tokens[index].line,
                 startChar: tokens[index].startCharacter,
                 endChar: tokens[index].endCharacter,
@@ -90,11 +95,26 @@ function parseDirectives(tokens, index) {
     }
     return index;
 }
+function parseTargetDirective(tokens, index) {
+    log_1.default.write('DEBUG', tokens[index]);
+    let target = tokens[index];
+    index += 1; // Move to TARGET KEYWORD
+    let value = tokens[index];
+    symbolTable.push({
+        kind: 'Directive',
+        type: 'none',
+        name: target.value,
+        value: value.value,
+        context: context,
+        line: target.line,
+        startChar: target.startCharacter,
+        endChar: target.endCharacter,
+    });
+    index += 1; // Move to TARGET VALUE
+    log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(symbolTable[symbolTable.length - 1])}.`);
+    return index;
+}
 function parseSourceDirective(tokens, index) {
-    const directive = tokens[index].value; // Directive value
-    const line = tokens[index].line; // Directive line
-    const sc = tokens[index].startCharacter; // Directive starts with '!'
-    const ec = tokens[index].endCharacter; // Directive starts with '!'
     let source = '';
     index += 1; // Move past the SOURCE KEYWORD
     while (tokens[index] && !(tokens[index].type === 'Delimiter' && tokens[index].value === '(')) {
@@ -111,9 +131,11 @@ function parseSourceDirective(tokens, index) {
             index += 1; // Move past the comma;
         else {
             symbolTable.push({
-                name: tokens[index].value,
                 kind: 'Function',
                 type: 'none',
+                name: tokens[index].value,
+                value: '',
+                context: source,
                 line: tokens[index].line,
                 startChar: tokens[index].startCharacter,
                 endChar: tokens[index].endCharacter,
@@ -133,9 +155,11 @@ function parseFunction(tokens, i, symbolTable) {
     const functionName = tokens[i + 1]; // The function name follows 'PROC'
     // Add the function to the symbol table
     symbolTable.push({
-        name: functionName.value,
         kind: 'Function',
         type: 'none',
+        name: functionName.value,
+        value: '',
+        context: context,
         line: functionName.line,
         startChar: functionName.startCharacter,
         endChar: functionName.endCharacter, // End character position
@@ -152,9 +176,11 @@ function parseVariable(tokens, i, symbolTable) {
         const varName = tokens[i];
         // Add the function to the symbol table
         symbolTable.push({
-            name: varName.value,
             kind: 'Variable',
             type: dataType,
+            name: varName.value,
+            value: '',
+            context: context,
             line: varName.line,
             startChar: varName.startCharacter,
             endChar: varName.endCharacter, // End character position
