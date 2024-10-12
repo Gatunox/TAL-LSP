@@ -9,7 +9,8 @@
     "incremental": true
   },
   "include": [
-    "src"
+    "src",
+    "src/*.ts"
   ],
   "exclude": [
     "node_modules",

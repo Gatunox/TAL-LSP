@@ -34,9 +34,9 @@ function cacheTokens(documentUri, version, tokens) {
     });
     // const filterdTokens = tokens.filter((token: Token) => !isNewLine(token));
     const symbols = (0, parser_1.default)(tokens);
-    filterAndCacheSymbos(documentUri, version, symbols);
+    filterAndCacheSymbols(documentUri, version, symbols);
 }
-function filterAndCacheSymbos(documentUri, version, symbolTable) {
+function filterAndCacheSymbols(documentUri, version, symbolTable) {
     log_1.default.write('DEBUG', 'filterAndCacheSymbos called:');
     // Use a Map to store tokens by their value to automatically exclude duplicates
     const filteredSymbolsMap = new Map();

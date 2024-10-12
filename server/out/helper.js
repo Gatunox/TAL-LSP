@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isIndirection = exports.isBooleanExpresionOperator = exports.isRelationalExpresionOperator = exports.isArithmeticExpresionOperator = exports.isBitShilfOperator = exports.isBitFieldOperator = exports.isDereferencingOperator = exports.isFixedParamTypeOperator = exports.isTemplateStructureOperator = exports.isRepetitionOperator = exports.isRemoveIndirectionOperator = exports.isLabelCaseOperator = exports.isMoveOperator = exports.isAssigmentOperator = exports.isDelimiter = exports.isDataType = exports.isKeyword = exports.isQuote = exports.isParenthesis = exports.isSquareBrackets = exports.isAngleBrackets = exports.isComment = exports.isClosingBit = exports.isOpeneningBit = exports.isClosingIndex = exports.isOpeneningIndex = exports.isClosingParenthesis = exports.isOpeneningParenthesis = exports.isSingleLineComment = exports.isClosingComment = exports.isOpeneningComment = exports.isStandarFucntions = exports.isCompilerDirective = exports.isCompilerDirectiveLine = exports.isNumber = exports.isWhitespace = exports.isLetter = exports.isNewLine = exports.peekCharacters = exports.peekCharacterAt = exports.peekCharacter = exports.getLastValue = exports.getLastType = exports.getLastElement = exports.getCharacters = exports.getCharacter = exports.skipCharacters = exports.moveCursor = exports.resetCursor = exports.getCursor = void 0;
-exports.isSpecialCharacter = exports.isOperator = void 0;
+exports.isBooleanExpresionOperator = exports.isRelationalExpresionOperator = exports.isArithmeticExpresionOperator = exports.isBitShilfOperator = exports.isBitFieldOperator = exports.isDereferencingOperator = exports.isFixedParamTypeOperator = exports.isTemplateStructureOperator = exports.isRepetitionOperator = exports.isRemoveIndirectionOperator = exports.isLabelCaseOperator = exports.isMoveOperator = exports.isAssigmentOperator = exports.isDelimiter = exports.isDataType = exports.isKeyword = exports.isQuote = exports.isParenthesis = exports.isSquareBrackets = exports.isAngleBrackets = exports.isComment = exports.isClosingBit = exports.isOpeneningBit = exports.isClosingIndex = exports.isOpeneningIndex = exports.isClosingParenthesis = exports.isOpeneningParenthesis = exports.isSingleLineComment = exports.isClosingComment = exports.isOpeneningComment = exports.isStandarFucntions = exports.isSimpleCompilerDirective = exports.isCompilerDirective = exports.isCompilerDirectiveLine = exports.isNumber = exports.isWhitespace = exports.isLetter = exports.isNewLine = exports.peekCharacters = exports.peekCharacterAt = exports.peekCharacter = exports.getLastValue = exports.getLastType = exports.getLastElement = exports.getCharacters = exports.getCharacter = exports.skipCharacters = exports.moveCursor = exports.resetCursor = exports.getCursor = void 0;
+exports.isSpecialCharacter = exports.isOperator = exports.isIndirection = void 0;
 const log_1 = require("./log");
 const LETTER = /[a-zA-Z_^]/;
 const WHITESPACE = /[ \t]+/; // Matches spaces and tabs
@@ -35,18 +35,25 @@ const BOOLEAN_EXPRESION_OPERATORS = ["AND", "OR", "NOT"];
 /*********************************************************************************************************************************/
 /*********************************************************** DIRECTIVES **********************************************************/
 /*********************************************************************************************************************************/
-const COMPILER_DIRECTIVES = ["ABORT", "NOABORT", "ABSLIST", "NOABSLIST", "ASSERTION", "BEGINCOMPILATION",
-    "CHECEK", "NOCHECK", "PUSHCHECK", "POPCHECK", "CODE", "NOCODE",
-    "PUSHCODE", "POPCODE", "COLUMNS", "COMPACT", "NOCOMPACT", "CPU",
-    "CROSSREF", "NOCROSSREF", "DATAPAGES", "DECS", "DEFEXPAND", "NODEFEXPAND",
-    "PUSHDEFEXPAND", "POPDEFEXPAND", "DEFINETOG", "DEFINETOG", "ENV", "ERRORFILE",
-    "ERRORS", "EXTENDSTACK", "EXTENDTALHEAP", "FIXUP", "NOFIXUP", "FMAP",
-    "NOFMAP", "GMAP", "NOGMAP", "HEAP", "HIGHPIN", "HIGHREQUESTERS",
-    "ICODE", "NOICODE", "PUSHICODE", "POPICODE", "IF", "IFNOT",
-    "ENDIF", "INHIBITXX", "NOINHIBITXX", "INNERLIST", "NOINNERLIST", "PUSHINNERLIST",
-    "POPINNERLIST", "INSPECT", "NOINSPECT", "INT32INDEX", "NOINT32INDEX", "PUSHINT32INDEX",
-    "POPINT32INDEX", "LARGESTACK"
-];
+const SIMPLE_COMPILER_DIRECTIVES = ['NOABORT', 'ABSLIST', 'NOABSLIST', 'BEGINCOMPILATION', 'CHECK', 'NOCHECK',
+    'PUSHCHECK', 'POPCHECK', 'CODE', 'NOCODE', 'PUSHCODE', 'POPCODE',
+    'COMPACT', 'NOCOMPACT', 'DEFEXPAND', 'NODEFEXPAND', 'PUSHDEFEXPAND', 'POPDEFEXPAND',
+    'DUMPCONS', 'FIXUP', 'NOFIXUP', 'FMAP', 'NOFMAP', 'GMAP',
+    'NOGMAP', 'HIGHPIN', 'HIGHREQUESTERS', 'ICODE', 'NOICOD', 'PUSHICODE',
+    'POPICODE', 'INHIBITXX', 'NOINHIBITXX', 'INNERLIST', 'NOINNERLIST', 'PUSHINNERLIST',
+    'POPINNERLIST', 'INSPECT', 'NOINSPECT', 'INT32INDEX', 'NOINT32INDEX', 'PUSHINT32INDEX',
+    'POPINT32INDEX', 'LIST', 'NOLIST', 'PUSHLIST', 'POPLIST', 'MAP',
+    'NOMAP', 'PUSMAP', 'POPMAP', 'OLDFLTSTDFUNC', 'PRINTSYM', 'NOPRINTSYM',
+    'RELOCATE', 'ROUND', 'NOROUND', 'RUNNAMED', 'SAVEABEND', 'NOSAVEABEND',
+    'SUPPRESS', 'NOSUPPRESS', 'SYMBOLS', 'NOSYMBOLS', 'SYNTAX'];
+const COMPLEX_COMPILER_DIRECTIVES = ["ASSERTION", "COLUMNS", "CPU", "CROSSREF", "NOCROSSREF", "DATAPAGES",
+    "DECS", "DEFINETOG", "ENV", "ERRORFILE", "ERRORS", "EXTENDSTACK",
+    "EXTENDTALHEAP", "HEAP", "IF", "IFNOT", "ENDIF", "LARGESTACK",
+    "LIBRARY", "LINES", "LMAP", "NOLMAP", "OPTIMIZE", "PAGE",
+    "PEP", "RESETTOG", "RP", "DEFINETOG", "SAVEGLOBALS", "SEARCH",
+    "SECTION", "SETTOG", "SOURCE", "STACK", "SUBTYPE", "SYMBOLPAGES",
+    "USEGLOBALS", "WARN", "NOWARN"];
+const COMPILER_DIRECTIVES = [...SIMPLE_COMPILER_DIRECTIVES, ...COMPLEX_COMPILER_DIRECTIVES];
 /*********************************************************************************************************************************/
 /***********************************************************  KEYWORDS  **********************************************************/
 /*********************************************************************************************************************************/
@@ -210,6 +217,12 @@ const isCompilerDirective = (word) => {
     return retVal;
 };
 exports.isCompilerDirective = isCompilerDirective;
+const isSimpleCompilerDirective = (word) => {
+    const retVal = SIMPLE_COMPILER_DIRECTIVES.some(keyword => keyword.toLowerCase() === word.toLowerCase());
+    log_1.default.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`);
+    return retVal;
+};
+exports.isSimpleCompilerDirective = isSimpleCompilerDirective;
 const isStandarFucntions = (word) => {
     const retVal = STANDARD_FUNCTIONS.some(keyword => keyword.toLowerCase() === word.toLowerCase());
     log_1.default.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`);
@@ -448,4 +461,50 @@ const isSpecialCharacter = (input) => {
     return 0;
 };
 exports.isSpecialCharacter = isSpecialCharacter;
+function skipTokens(tokens, index, numberToSkip) {
+    if (index < tokens.length) {
+        return { token: tokens[index], index: index + numberToSkip };
+    }
+    return { token: null, index }; // No more tokens left
+}
+function getNextToken(tokens, index) {
+    if (index < tokens.length) {
+        return { token: tokens[index], index: index + 1 };
+    }
+    return { token: null, index }; // No more tokens left
+}
+function getTokensUntilDelimiter(tokens, index, delimiter) {
+    const result = [];
+    while (index < tokens.length && tokens[index].value !== delimiter) {
+        result.push(tokens[index]);
+        index++;
+    }
+    // Move past the delimiter if found
+    if (index < tokens.length && tokens[index].value === delimiter) {
+        index++;
+    }
+    return { tokens: result, index };
+}
+function getTokensBetween(tokens, index, open, close) {
+    const result = [];
+    let openCount = 0;
+    // Check if we are starting with the expected opening token
+    if (tokens[index].value === open) {
+        openCount++;
+        index++;
+    }
+    while (index < tokens.length && openCount > 0) {
+        if (tokens[index].value === open) {
+            openCount++; // Found another opening token
+        }
+        else if (tokens[index].value === close) {
+            openCount--; // Found a closing token
+        }
+        if (openCount > 0) {
+            result.push(tokens[index]);
+        }
+        index++;
+    }
+    return { tokens: result, index };
+}
 //# sourceMappingURL=helper.js.map

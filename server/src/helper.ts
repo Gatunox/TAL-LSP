@@ -34,18 +34,28 @@ const BOOLEAN_EXPRESION_OPERATORS = ["AND", "OR", "NOT"];
 /*********************************************************************************************************************************/
 /*********************************************************** DIRECTIVES **********************************************************/
 /*********************************************************************************************************************************/
-const COMPILER_DIRECTIVES = ["ABORT", "NOABORT", "ABSLIST", "NOABSLIST", "ASSERTION", "BEGINCOMPILATION",
-    "CHECEK", "NOCHECK", "PUSHCHECK", "POPCHECK", "CODE", "NOCODE",
-    "PUSHCODE", "POPCODE", "COLUMNS", "COMPACT", "NOCOMPACT", "CPU",
-    "CROSSREF", "NOCROSSREF", "DATAPAGES", "DECS", "DEFEXPAND", "NODEFEXPAND",
-    "PUSHDEFEXPAND", "POPDEFEXPAND", "DEFINETOG", "DEFINETOG", "ENV", "ERRORFILE",
-    "ERRORS", "EXTENDSTACK", "EXTENDTALHEAP", "FIXUP", "NOFIXUP", "FMAP",
-    "NOFMAP", "GMAP", "NOGMAP", "HEAP", "HIGHPIN", "HIGHREQUESTERS",
-    "ICODE", "NOICODE", "PUSHICODE", "POPICODE", "IF", "IFNOT",
-    "ENDIF", "INHIBITXX", "NOINHIBITXX", "INNERLIST", "NOINNERLIST", "PUSHINNERLIST",
-    "POPINNERLIST", "INSPECT", "NOINSPECT", "INT32INDEX", "NOINT32INDEX", "PUSHINT32INDEX",
-    "POPINT32INDEX", "LARGESTACK"
-];
+
+const SIMPLE_COMPILER_DIRECTIVES = ['NOABORT', 'ABSLIST', 'NOABSLIST', 'BEGINCOMPILATION', 'CHECK', 'NOCHECK', 
+    'PUSHCHECK', 'POPCHECK', 'CODE', 'NOCODE', 'PUSHCODE', 'POPCODE', 
+    'COMPACT', 'NOCOMPACT', 'DEFEXPAND', 'NODEFEXPAND', 'PUSHDEFEXPAND', 'POPDEFEXPAND', 
+    'DUMPCONS', 'FIXUP', 'NOFIXUP', 'FMAP', 'NOFMAP', 'GMAP', 
+    'NOGMAP', 'HIGHPIN', 'HIGHREQUESTERS', 'ICODE', 'NOICOD', 'PUSHICODE', 
+    'POPICODE', 'INHIBITXX', 'NOINHIBITXX', 'INNERLIST', 'NOINNERLIST', 'PUSHINNERLIST', 
+    'POPINNERLIST', 'INSPECT', 'NOINSPECT', 'INT32INDEX', 'NOINT32INDEX', 'PUSHINT32INDEX', 
+    'POPINT32INDEX', 'LIST', 'NOLIST', 'PUSHLIST', 'POPLIST', 'MAP',
+    'NOMAP', 'PUSMAP', 'POPMAP', 'OLDFLTSTDFUNC', 'PRINTSYM', 'NOPRINTSYM',
+    'RELOCATE', 'ROUND', 'NOROUND', 'RUNNAMED', 'SAVEABEND', 'NOSAVEABEND', 
+    'SUPPRESS', 'NOSUPPRESS', 'SYMBOLS', 'NOSYMBOLS', 'SYNTAX'];
+
+const COMPLEX_COMPILER_DIRECTIVES = ["ASSERTION", "COLUMNS", "CPU", "CROSSREF", "NOCROSSREF", "DATAPAGES",
+    "DECS", "DEFINETOG", "ENV", "ERRORFILE", "ERRORS", "EXTENDSTACK",
+    "EXTENDTALHEAP", "HEAP", "IF", "IFNOT", "ENDIF", "LARGESTACK",
+    "LIBRARY", "LINES", "LMAP", "NOLMAP", "OPTIMIZE", "PAGE",
+    "PEP", "RESETTOG", "RP", "DEFINETOG", "SAVEGLOBALS", "SEARCH",
+    "SECTION", "SETTOG", "SOURCE", "STACK", "SUBTYPE", "SYMBOLPAGES",
+    "USEGLOBALS", "WARN", "NOWARN"];
+
+const COMPILER_DIRECTIVES = [...SIMPLE_COMPILER_DIRECTIVES, ...COMPLEX_COMPILER_DIRECTIVES];
 /*********************************************************************************************************************************/
 /***********************************************************  KEYWORDS  **********************************************************/
 /*********************************************************************************************************************************/
@@ -56,7 +66,7 @@ const KEYWORDS = ["AND", "DO", "FORWARD", "MAIN", "RETURN", "TO",
     "CALL", "END", "INTERRUPT", "OTHERWISE", "STORE", "VARIABLE",
     "CALLABLE", "ENTRY", "LABEL", "PRIV", "STRING", "WHILE",
     "CASE", "EXTERNAL", "LAND", "PROC", "STRUCT", "XOR",
-    "CODE", "FIXED", "LITERAL", "REAL", "SUBPROC",
+    "CODE", "FIXED", "LITERAL", "REAL", "SUBPROC", 
     "DEFINE", "FOR", "LOR", "RESIDENT", "THEN",
 ]
 /*********************************************************************************************************************************/
@@ -66,7 +76,7 @@ const DATA_TYPES = ["STRING",
     "INT",
     "FIXED",
     "REAL",
-    "UNSIGNED",
+    "UNSIGNED", 
 ]
 /*********************************************************************************************************************************/
 /****************************************************** STANDAR FUNCIOTNS  **********************************************************/
@@ -184,6 +194,11 @@ export const isCompilerDirectiveLine = (word: string): boolean => {
 }
 export const isCompilerDirective = (word: string): boolean => {
     const retVal = COMPILER_DIRECTIVES.some(keyword => keyword.toLowerCase() === word.toLowerCase());
+    log.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`)
+    return retVal;    
+}
+export const isSimpleCompilerDirective = (word: string): boolean => {
+    const retVal = SIMPLE_COMPILER_DIRECTIVES.some(keyword => keyword.toLowerCase() === word.toLowerCase());
     log.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`)
     return retVal;    
 }
@@ -394,6 +409,63 @@ export const isSpecialCharacter = (input: string): number => {
         }
     }
     return 0;
+}
+
+
+function skipTokens(tokens: Token[], index: number, numberToSkip: number): { token: Token | null, index: number } {
+    if (index < tokens.length) {
+        return { token: tokens[index], index: index + numberToSkip };
+    }
+    return { token: null, index };  // No more tokens left
+}
+
+function getNextToken(tokens: Token[], index: number): { token: Token | null, index: number } {
+    if (index < tokens.length) {
+        return { token: tokens[index], index: index + 1 };
+    }
+    return { token: null, index };  // No more tokens left
+}
+
+function getTokensUntilDelimiter(tokens: Token[], index: number, delimiter: string): { tokens: Token[], index: number } {
+    const result: Token[] = [];
+
+    while (index < tokens.length && tokens[index].value !== delimiter) {
+        result.push(tokens[index]);
+        index++;
+    }
+
+    // Move past the delimiter if found
+    if (index < tokens.length && tokens[index].value === delimiter) {
+        index++;
+    }
+
+    return { tokens: result, index };
+}
+
+function getTokensBetween(tokens: Token[], index: number, open: string, close: string): { tokens: Token[], index: number } {
+    const result: Token[] = [];
+    let openCount = 0;
+
+    // Check if we are starting with the expected opening token
+    if (tokens[index].value === open) {
+        openCount++;
+        index++;
+    }
+
+    while (index < tokens.length && openCount > 0) {
+        if (tokens[index].value === open) {
+            openCount++;  // Found another opening token
+        } else if (tokens[index].value === close) {
+            openCount--;  // Found a closing token
+        }
+
+        if (openCount > 0) {
+            result.push(tokens[index]);
+        }
+        index++;
+    }
+
+    return { tokens: result, index };
 }
 
 export type Token = {
