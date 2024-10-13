@@ -473,38 +473,4 @@ function getNextToken(tokens, index) {
     }
     return { token: null, index }; // No more tokens left
 }
-function getTokensUntilDelimiter(tokens, index, delimiter) {
-    const result = [];
-    while (index < tokens.length && tokens[index].value !== delimiter) {
-        result.push(tokens[index]);
-        index++;
-    }
-    // Move past the delimiter if found
-    if (index < tokens.length && tokens[index].value === delimiter) {
-        index++;
-    }
-    return { tokens: result, index };
-}
-function getTokensBetween(tokens, index, open, close) {
-    const result = [];
-    let openCount = 0;
-    // Check if we are starting with the expected opening token
-    if (tokens[index].value === open) {
-        openCount++;
-        index++;
-    }
-    while (index < tokens.length && openCount > 0) {
-        if (tokens[index].value === open) {
-            openCount++; // Found another opening token
-        }
-        else if (tokens[index].value === close) {
-            openCount--; // Found a closing token
-        }
-        if (openCount > 0) {
-            result.push(tokens[index]);
-        }
-        index++;
-    }
-    return { tokens: result, index };
-}
 //# sourceMappingURL=helper.js.map

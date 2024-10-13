@@ -5,6 +5,40 @@ const log_1 = require("./log");
 let context = 'Global';
 let index = 0;
 let symbolsCache = new Map();
+function getTokensBetween(tokens, open, close, kind, type) {
+    const result = [];
+    let openCount = 0;
+    // Check if we are starting with the expected opening token
+    if (tokens[index].value === open) {
+        openCount++;
+        index += 1;
+    }
+    while (index < tokens.length && openCount > 0) {
+        if (tokens[index].value === open) {
+            openCount++; // Found another opening token
+        }
+        else if (tokens[index].value === close) {
+            openCount--; // Found a closing token
+        }
+        if (openCount > 0 && tokens[index].value !== ',') {
+            result.push(tokens[index]);
+        }
+        index += 1;
+    }
+    return result;
+}
+function getTokensUntilDelimiter(tokens, index, delimiter) {
+    const result = [];
+    while (index < tokens.length && tokens[index].value !== delimiter) {
+        result.push(tokens[index]);
+        index += 1;
+    }
+    // Move past the delimiter if found
+    if (index < tokens.length && tokens[index].value === delimiter) {
+        index += 1;
+    }
+    return { tokens: result, index };
+}
 // Main Parsing Function
 function parseTokens(tokens) {
     log_1.default.write('DEBUG', 'parseTokens called:');
@@ -47,6 +81,10 @@ function parseLiteral(tokens) {
             break;
         if (tokens[index].value === ';')
             break;
+        while (index < tokens.length && tokens[index].type != 'Name') {
+            log_1.default.write('DEBUG', tokens[index]);
+            index += 1; // move to next token; 
+        }
         let indent = tokens[index];
         index += 1; // Move passa the Identifier
         if (tokens[index].type === 'Delimiter' && tokens[index].value === '=') {
@@ -56,15 +94,15 @@ function parseLiteral(tokens) {
         log_1.default.write('DEBUG', tokens[index]);
         let value = tokens[index].value;
         index += 1; // Move passa constant value
-        while (tokens[index] && tokens[index].value !== ',' && tokens[index].value !== ';') {
+        while (index < tokens.length && tokens[index].value !== ',' && tokens[index].value !== ';') {
             log_1.default.write('DEBUG', tokens[index]);
             value += tokens[index].value;
             index += 1;
         }
         key = context + '.' + indent.value;
         symbolsCache.set(key, [{
-                kind: 'Identifier',
-                type: 'Literal',
+                kind: 'Literal',
+                type: '',
                 name: indent.value,
                 value: value,
                 context: context,
@@ -72,18 +110,13 @@ function parseLiteral(tokens) {
                 startChar: indent.startCharacter,
                 endChar: tokens[index].endCharacter,
             }]);
-        log_1.default.write('DEBUG', tokens[index]);
         log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
         if (tokens[index] && tokens[index].type === 'Delimiter' && tokens[index].value === ',') {
             log_1.default.write('DEBUG', tokens[index]);
             index += 1; // Move past comma, since we do not have to skip the ;
         }
-        if (tokens[index] && tokens[index].type === 'NewLine' && tokens[index].value === '<CR><LF>') {
-            log_1.default.write('DEBUG', tokens[index]);
-            index += 1; // Move past the newline
-        }
     }
-    if (tokens[index] && tokens[index].type === 'Delimiter' && tokens[index].value === ';') {
+    if (index < tokens.length && tokens[index].type === 'Delimiter' && tokens[index].value === ';') {
         log_1.default.write('DEBUG', tokens[index]);
         index += 1; // Move past comma, since we do not have to skip the ;
     }
@@ -91,54 +124,109 @@ function parseLiteral(tokens) {
 }
 function parseDefine(tokens) {
     log_1.default.write('DEBUG', 'parseDefine called:');
+    let parentesis = false;
     let key = '';
-    index += 1; // Move past the LITERAL Keyword   
+    index += 1; // Move past the DEFINE Keyword   
     while (index < tokens.length) {
         if (!tokens[index])
             break;
         if (tokens[index].value === ';')
             break;
+        while (index < tokens.length && tokens[index].type != 'Name') {
+            log_1.default.write('DEBUG', tokens[index]);
+            index += 1; // move to next token; 
+        }
         let indent = tokens[index];
-        index += 1; // Move passa the Identifier
-        if (tokens[index].type === 'Delimiter' && tokens[index].value === '=') {
-            log_1.default.write('DEBUG', tokens[index]);
-            index += 1; // Move past the =;
-        }
-        log_1.default.write('DEBUG', tokens[index]);
-        let value = tokens[index].value;
-        index += 1; // Move passa constant value
-        while (tokens[index] && tokens[index].value !== ',' && tokens[index].value !== ';') {
-            log_1.default.write('DEBUG', tokens[index]);
-            value += tokens[index].value;
-            index += 1;
-        }
         key = context + '.' + indent.value;
         symbolsCache.set(key, [{
-                kind: 'Identifier',
-                type: 'Literal',
+                kind: 'Define',
+                type: 'Indentifier',
                 name: indent.value,
-                value: value,
+                value: indent.value,
+                context: context,
+                line: indent.line,
+                startChar: indent.startCharacter,
+                endChar: indent.endCharacter,
+            }]);
+        log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
+        index += 1; // Move passa the Identifier
+        while (index < tokens.length && tokens[index].value != '(' && tokens[index].value != '=') {
+            log_1.default.write('DEBUG', tokens[index]);
+            index += 1; // move to next token; 
+        }
+        // Check if we are starting with the expected opening token
+        if (tokens[index].value === '(') {
+            parentesis = true;
+            index += 1;
+        }
+        while (index < tokens.length && parentesis === true) {
+            if (tokens[index].value === ')') {
+                parentesis = false; // Found a closing token
+            }
+            if (parentesis && tokens[index].value !== ',') {
+                let parameter = tokens[index];
+                let paramkey = key + '.' + parameter.value;
+                symbolsCache.set(paramkey, [{
+                        kind: 'Define',
+                        type: 'Parameter',
+                        name: parameter.value,
+                        value: parameter.value,
+                        context: context,
+                        line: parameter.line,
+                        startChar: parameter.startCharacter,
+                        endChar: parameter.endCharacter,
+                    }]);
+                log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
+            }
+            index += 1;
+        }
+        while (index < tokens.length && tokens[index].value != '=') {
+            log_1.default.write('DEBUG', 'looking for =');
+            log_1.default.write('DEBUG', tokens[index]);
+            index += 1; // move to next token; 
+        }
+        if (tokens[index].type === 'Delimiter' && tokens[index].value === '=') {
+            log_1.default.write('DEBUG', '= found');
+            log_1.default.write('DEBUG', tokens[index]);
+            index += 1; // Move past the =
+        }
+        log_1.default.write('DEBUG', tokens[index]);
+        let definebody = [];
+        definebody.push(tokens[index]);
+        index += 1; // Move passa constant value
+        while (index < tokens.length && tokens[index].value !== '#') {
+            log_1.default.write('DEBUG', tokens[index]);
+            definebody.push(tokens[index]);
+            index += 1;
+        }
+        log_1.default.write('DEBUG', tokens[index]);
+        symbolsCache.set(key + '.Body', [{
+                kind: 'Define',
+                type: 'Body',
+                name: indent.value,
+                value: definebody,
                 context: context,
                 line: indent.line,
                 startChar: indent.startCharacter,
                 endChar: tokens[index].endCharacter,
             }]);
-        log_1.default.write('DEBUG', tokens[index]);
         log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
-        if (tokens[index] && tokens[index].type === 'Delimiter' && tokens[index].value === ',') {
+        index += 1; // Move past the #
+        while (index < tokens.length && tokens[index].value != ',' && tokens[index].value != ';') {
+            log_1.default.write('DEBUG', 'looking for =');
             log_1.default.write('DEBUG', tokens[index]);
-            index += 1; // Move past comma, since we do not have to skip the ;
+            index += 1; // move to next token; 
         }
-        if (tokens[index] && tokens[index].type === 'NewLine' && tokens[index].value === '<CR><LF>') {
+        if (tokens[index].value === ',') {
             log_1.default.write('DEBUG', tokens[index]);
-            index += 1; // Move past the newline
+            index += 1;
+        }
+        if (tokens[index].value === ';') {
+            log_1.default.write('DEBUG', tokens[index]);
+            index += 1;
+            break;
         }
     }
-    if (tokens[index] && tokens[index].type === 'Delimiter' && tokens[index].value === ';') {
-        log_1.default.write('DEBUG', tokens[index]);
-        index += 1; // Move past comma, since we do not have to skip the ;
-    }
-    return index;
 }
 function parseComment(tokens) {
     log_1.default.write('DEBUG', 'parseComment called:');
@@ -165,10 +253,10 @@ function parseCommentLine(tokens) {
 function parseKeyword(tokens) {
     log_1.default.write('DEBUG', tokens[index]);
     if (tokens[index] && tokens[index].value.toUpperCase() === 'LITERAL') {
-        index = parseLiteral(tokens);
+        parseLiteral(tokens);
     }
     else if (tokens[index] && tokens[index].value.toUpperCase() === 'DEFINE') {
-        index = parseDefine(tokens);
+        parseDefine(tokens);
     }
     else {
         index += 1; // move to next token;

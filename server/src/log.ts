@@ -1,6 +1,6 @@
 import * as fs from "fs";
 
-type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
+export type LogLevel = 'DEBUG' | 'INFO' | 'WARNING' | 'ERROR';
 
 let logger:Logger | undefined = undefined;
 
@@ -57,9 +57,13 @@ class Logger {
     }
 
     private shouldLog(logLevel: LogLevel): boolean {
-        const levels: LogLevel[] = ['DEBUG', 'INFO', 'WARN', 'ERROR'];
+        console.log("logLevel " + logLevel)
+        console.log("this.level " + this.level)
+        const levels: LogLevel[] = ['DEBUG', 'INFO', 'WARNING', 'ERROR'];
         const currentLevelIndex = levels.indexOf(this.level);
+        console.log("Logger " + currentLevelIndex)
         const logLevelIndex = levels.indexOf(logLevel);
+        console.log("message " + logLevelIndex)
         return logLevelIndex >= currentLevelIndex;
     }
 
@@ -123,16 +127,6 @@ export default {Logger,
             logger = new Logger({ level: 'DEBUG', directoryPath, allowedProcs: [] });
             return true;
         }
-        /*log = fs.createWriteStream(directoryPath + '/lsp.log');
-        logger.on('open', (fd) => {
-            logIsOpen = true;
-            console.log(getCallerFunctionName() + ", " + "WriteStream created successfully. File descriptor:", fd);
-        });
-        logger.on('error', (err) => {
-            logIsOpen = false;
-            console.error(getCallerFunctionName() + ", " + "Error creating WriteStream:", err);
-        });
-        */
        return false;
     },
     write: (logLevel: LogLevel, message: object | string) => {
@@ -141,24 +135,6 @@ export default {Logger,
         } else {
             logger.log(logLevel, message);
         }
-        /*
-        if (typeof message === "object"){
-            if (logIsOpen){
-                log.write(getCallerFunctionName() + ", " + JSON.stringify(message) + "\n");
-            } else{
-                console.log(getCallerFunctionName() + ", " + JSON.stringify(message))
-            }
-        } else {
-            const clearCR = message.replace(/\r/g, "<CR>");
-            const clearLF = clearCR.replace(/\n/g, "<LF>");
-            const clearMessage = clearLF;
-            if (logIsOpen){
-                log.write(getCallerFunctionName() + ", " + clearMessage + "\n")
-            } else{
-                console.log(getCallerFunctionName() + ", " + clearMessage)
-            }
-        }
-        */
     }
 }
 
