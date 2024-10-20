@@ -30,12 +30,6 @@ const tokenize = (input: string) => {
             continue;
         }
 
-        if (helpers.isWhitespace(helpers.peekCharacter(input))) {
-            helpers.getCharacter(input)
-            currentCharacter += 1;  // Move to the next character
-            continue;
-        }
-
         if (helpers.isNumber(helpers.peekCharacter(input))) {
             const startChar = currentCharacter;
             let number = helpers.getCharacter(input);
@@ -71,7 +65,9 @@ const tokenize = (input: string) => {
              * We assume white space is the end of a word.5679--++
              * --
              */
-            while (helpers.getCursor() < input.length && helpers.isLetter(helpers.peekCharacter(input))) {
+            while (helpers.getCursor() < input.length && 
+                  (helpers.isLetter(helpers.peekCharacter(input))|| 
+                   helpers.isNumber(helpers.peekCharacter(input)))) {
                 symbol += helpers.getCharacter(input);
                 currentCharacter += 1;
             }
@@ -115,31 +111,6 @@ const tokenize = (input: string) => {
                 });
             }
             log.write('DEBUG', `Letter Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
-            continue;
-        }
-
-        if (helpers.isQuote(helpers.peekCharacter(input))) {
-            const startChar = currentCharacter;
-            let string = helpers.getCharacter(input)    
-            currentCharacter += 1;    
-
-            log.write('DEBUG', `isQuote retuned true with symbol = ${string}.`)
-            while (helpers.getCursor() < input.length && !helpers.isQuote(helpers.peekCharacter(input))) {
-                string += helpers.getCharacter(input);
-                currentCharacter += 1;
-            }
-            string += helpers.getCharacter(input)
-            currentCharacter += 1;
-
-            log.write('DEBUG', `Quote retuned true with symbol = ${string}.`)
-            tokens.push({
-                type: 'String',
-                value: string,
-                line: currentLine,
-                startCharacter: startChar,
-                endCharacter: currentCharacter
-            });
-            log.write('DEBUG', `Quote Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
             continue;
         }
 
@@ -251,6 +222,12 @@ const tokenize = (input: string) => {
                     continue;
                 }
             }
+        }
+
+        if (helpers.isWhitespace(helpers.peekCharacter(input))) {
+            helpers.getCharacter(input)
+            currentCharacter += 1;  // Move to the next character
+            continue;
         }
 
         log.write('DEBUG', `skiping unknown character = ${helpers.getCharacter(input)}.`);

@@ -57,13 +57,9 @@ class Logger {
     }
 
     private shouldLog(logLevel: LogLevel): boolean {
-        console.log("logLevel " + logLevel)
-        console.log("this.level " + this.level)
         const levels: LogLevel[] = ['DEBUG', 'INFO', 'WARNING', 'ERROR'];
         const currentLevelIndex = levels.indexOf(this.level);
-        console.log("Logger " + currentLevelIndex)
         const logLevelIndex = levels.indexOf(logLevel);
-        console.log("message " + logLevelIndex)
         return logLevelIndex >= currentLevelIndex;
     }
 

@@ -1,19 +1,42 @@
 {
-  "name": "REPLACE_ME",
-  "description": "REPLACE_ME",
-  "author": "REPLACE_ME",
+  "name": "tal",
+  "description": "Syntax highlighting, autcomplete for Transaction Application Language",
+  "author": "Gaston Zuccala",
   "license": "MIT",
   "version": "1.0.0",
-  "publisher": "REPLACE_ME",
+  "publisher": "Gaston Zuccala",
   "categories": [],
   "engines": {
     "vscode": "^1.75.0"
   },
-  "activationEvents": [
-    "onLanguage"
-  ],
   "main": "./client/out/extension",
   "contributes": {
+    "languages": [
+      {
+        "id": "tal",
+        "aliases": [
+          "TAL",
+          "tal"
+        ],
+        "extensions": [
+          ".tal"
+        ],
+        "configuration": "./language_configuration/tal.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "tal",
+        "scopeName": "source.tal",
+        "path": "./syntaxes/tal.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "tal",
+        "path": "./snippets/tal.json"
+      }
+    ],
     "configuration": {}
   },
   "scripts": {

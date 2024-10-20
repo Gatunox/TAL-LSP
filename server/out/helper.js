@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isBooleanExpresionOperator = exports.isRelationalExpresionOperator = exports.isArithmeticExpresionOperator = exports.isBitShilfOperator = exports.isBitFieldOperator = exports.isDereferencingOperator = exports.isFixedParamTypeOperator = exports.isTemplateStructureOperator = exports.isRepetitionOperator = exports.isRemoveIndirectionOperator = exports.isLabelCaseOperator = exports.isMoveOperator = exports.isAssigmentOperator = exports.isDelimiter = exports.isDataType = exports.isKeyword = exports.isQuote = exports.isParenthesis = exports.isSquareBrackets = exports.isAngleBrackets = exports.isComment = exports.isClosingBit = exports.isOpeneningBit = exports.isClosingIndex = exports.isOpeneningIndex = exports.isClosingParenthesis = exports.isOpeneningParenthesis = exports.isSingleLineComment = exports.isClosingComment = exports.isOpeneningComment = exports.isStandarFucntions = exports.isSimpleCompilerDirective = exports.isCompilerDirective = exports.isCompilerDirectiveLine = exports.isNumber = exports.isWhitespace = exports.isLetter = exports.isNewLine = exports.peekCharacters = exports.peekCharacterAt = exports.peekCharacter = exports.getLastValue = exports.getLastType = exports.getLastElement = exports.getCharacters = exports.getCharacter = exports.skipCharacters = exports.moveCursor = exports.resetCursor = exports.getCursor = void 0;
-exports.isSpecialCharacter = exports.isOperator = exports.isIndirection = void 0;
+exports.isTemplateStructureOperator = exports.isRepetitionOperator = exports.isRemoveIndirectionOperator = exports.isLabelCaseOperator = exports.isMoveOperator = exports.isAssigmentOperator = exports.isDelimiter = exports.isDataType = exports.isFixed = exports.isUnsigned = exports.isReal = exports.isInt = exports.isString = exports.isLiteral = exports.isDefine = exports.isKeyword = exports.isQuote = exports.isParenthesis = exports.isSquareBrackets = exports.isAngleBrackets = exports.isComment = exports.isClosingBit = exports.isOpeneningBit = exports.isClosingIndex = exports.isOpeneningIndex = exports.isClosingParenthesis = exports.isOpeneningParenthesis = exports.isSingleLineComment = exports.isClosingComment = exports.isOpeneningComment = exports.isStandarFucntions = exports.isSimpleCompilerDirective = exports.isCompilerDirective = exports.isCompilerDirectiveLine = exports.isNumber = exports.isWhitespace = exports.isLetter = exports.isNewLine = exports.peekCharacters = exports.peekCharacterAt = exports.peekCharacter = exports.getLastValue = exports.getLastType = exports.getLastElement = exports.getCharacters = exports.getCharacter = exports.skipCharacters = exports.moveCursor = exports.resetCursor = exports.getCursor = void 0;
+exports.isSpecialCharacter = exports.isOperator = exports.isSubLocalContext = exports.isLocalContext = exports.isGlobalContext = exports.isIndirection = exports.isBooleanExpresionOperator = exports.isRelationalExpresionOperator = exports.isArithmeticExpresionOperator = exports.isBitShilfOperator = exports.isBitFieldOperator = exports.isDereferencingOperator = exports.isFixedParamTypeOperator = void 0;
 const log_1 = require("./log");
 const LETTER = /[a-zA-Z_^]/;
 const WHITESPACE = /[ \t]+/; // Matches spaces and tabs
@@ -319,6 +319,48 @@ const isKeyword = (word) => {
     return retVal;
 };
 exports.isKeyword = isKeyword;
+const isDefine = (word) => {
+    const retVal = 'DEFINE' === word.toUpperCase();
+    log_1.default.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`);
+    return retVal;
+};
+exports.isDefine = isDefine;
+const isLiteral = (word) => {
+    const retVal = 'LITERAL' === word.toUpperCase();
+    log_1.default.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`);
+    return retVal;
+};
+exports.isLiteral = isLiteral;
+const isString = (word) => {
+    const retVal = 'STRING' === word.toUpperCase();
+    log_1.default.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`);
+    return retVal;
+};
+exports.isString = isString;
+const isInt = (word) => {
+    const retVal = 'INT' === word.toUpperCase();
+    log_1.default.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`);
+    return retVal;
+};
+exports.isInt = isInt;
+const isReal = (word) => {
+    const retVal = 'REAL' === word.toUpperCase();
+    log_1.default.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`);
+    return retVal;
+};
+exports.isReal = isReal;
+const isUnsigned = (word) => {
+    const retVal = 'UNSIGNED' === word.toUpperCase();
+    log_1.default.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`);
+    return retVal;
+};
+exports.isUnsigned = isUnsigned;
+const isFixed = (word) => {
+    const retVal = 'UNSIGNED' === word.toUpperCase();
+    log_1.default.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`);
+    return retVal;
+};
+exports.isFixed = isFixed;
 const isDataType = (word) => {
     const retVal = DATA_TYPES.some(dataType => dataType.toLowerCase() === word.toLowerCase());
     log_1.default.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`);
@@ -415,6 +457,24 @@ const isIndirection = (character) => {
     return retVal;
 };
 exports.isIndirection = isIndirection;
+const isGlobalContext = (context) => {
+    const retVal = (context === "Global");
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${context}, at ${cursor}`);
+    return retVal;
+};
+exports.isGlobalContext = isGlobalContext;
+const isLocalContext = (context) => {
+    const retVal = (context === "Local");
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${context}, at ${cursor}`);
+    return retVal;
+};
+exports.isLocalContext = isLocalContext;
+const isSubLocalContext = (context) => {
+    const retVal = (context === "Sublocal");
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${context}, at ${cursor}`);
+    return retVal;
+};
+exports.isSubLocalContext = isSubLocalContext;
 const isOperator = (character) => {
     const retVal = ((0, exports.isDelimiter)(character) ||
         (0, exports.isAssigmentOperator)(character) ||

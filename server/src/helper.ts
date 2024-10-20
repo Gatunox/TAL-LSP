@@ -282,6 +282,41 @@ export const isKeyword = (word: string): boolean => {
     log.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`)
     return retVal;
 }
+export const isDefine = (word: string): boolean => {
+    const retVal = 'DEFINE' === word.toUpperCase();
+    log.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`)
+    return retVal;
+}
+export const isLiteral = (word: string): boolean => {
+    const retVal = 'LITERAL' === word.toUpperCase();
+    log.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`)
+    return retVal;
+}
+export const isString = (word: string): boolean => {
+    const retVal = 'STRING' === word.toUpperCase();
+    log.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`)
+    return retVal;
+}
+export const isInt = (word: string): boolean => {
+    const retVal = 'INT' === word.toUpperCase();
+    log.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`)
+    return retVal;
+}
+export const isReal = (word: string): boolean => {
+    const retVal = 'REAL' === word.toUpperCase();
+    log.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`)
+    return retVal;
+}
+export const isUnsigned = (word: string): boolean => {
+    const retVal = 'UNSIGNED' === word.toUpperCase();
+    log.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`)
+    return retVal;
+}
+export const isFixed = (word: string): boolean => {
+    const retVal = 'UNSIGNED' === word.toUpperCase();
+    log.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`)
+    return retVal;
+}
 export const isDataType = (word: string): boolean => {
     const retVal = DATA_TYPES.some(dataType => dataType.toLowerCase() === word.toLowerCase());
     log.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`)
@@ -362,6 +397,21 @@ export const isIndirection = (character: string): boolean => {
     log.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
+export const isGlobalContext = (context: string): boolean => {
+    const retVal = (context === "Global");
+    log.write('DEBUG', `returned "${retVal}" for character ${context}, at ${cursor}`)
+    return retVal;
+}
+export const isLocalContext = (context: string): boolean => {
+    const retVal = (context === "Local");
+    log.write('DEBUG', `returned "${retVal}" for character ${context}, at ${cursor}`)
+    return retVal;
+}
+export const isSubLocalContext = (context: string): boolean => {
+    const retVal = (context === "Sublocal");
+    log.write('DEBUG', `returned "${retVal}" for character ${context}, at ${cursor}`)
+    return retVal;
+}
 
 export const isOperator = (character: string): boolean => {
     const retVal = (isDelimiter(character) ||

@@ -1,10 +1,10 @@
 {
-  "name": "REPLACE_ME",
-  "description": "REPLACE_ME",
-  "author": "REPLACE_ME",
+  "name": "tal-client",
+  "description": "Autcomplete for Transaction Application Language",
+  "author": "Gaston Zuccala",
   "license": "MIT",
   "version": "0.0.1",
-  "publisher": "REPLACE_ME",
+  "publisher": "Gaston Zuccala",
   "repository": {
     "type": "git",
     "url": "REPLACE_ME"

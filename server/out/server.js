@@ -33,20 +33,19 @@ function cacheTokens(documentUri, version, tokens) {
         tokens: tokens, // Store filtered tokens
     });
     // const filterdTokens = tokens.filter((token: Token) => !isNewLine(token));
-    const symbols = (0, parser_1.default)(tokens);
-    filterAndCacheSymbols(documentUri, version, symbols);
+    const symbolsCache = (0, parser_1.default)(tokens);
+    filterAndCacheSymbols(documentUri, version, symbolsCache);
 }
-function filterAndCacheSymbols(documentUri, version, symbolTable) {
+function filterAndCacheSymbols(documentUri, version, symbolsCache) {
     log_1.default.write('DEBUG', 'filterAndCacheSymbos called:');
     // Use a Map to store tokens by their value to automatically exclude duplicates
     const filteredSymbolsMap = new Map();
-    symbolTable.forEach((symbolEntry) => {
-        log_1.default.write('DEBUG', symbolEntry);
-        // log.write('DEBUG', `Token: ${token.type}, Value: ${token.value}, Position: ${token.position}`);
-        if (!filteredSymbolsMap.has(symbolEntry.name)) {
-            filteredSymbolsMap.set(symbolEntry.name, symbolEntry);
+    for (const [key, value] of symbolsCache.entries()) {
+        log_1.default.write('DEBUG', 'Key: ' + key + ', Value: ' + JSON.stringify(value));
+        if (!filteredSymbolsMap.has(key)) {
+            filteredSymbolsMap.set(key, value);
         }
-    });
+    }
     // Convert the map back to an array to store in the cache
     const filteredSymbols = Array.from(filteredSymbolsMap.values());
     // Log the cache content for verification
@@ -215,15 +214,12 @@ connection.onCompletion((params) => {
     const position = params.position;
     if (!document)
         return [];
-    console.log("paso1");
     // Get the tokens for this document from the cache
     //const cachedData = documentSymbolsCache.get(documentUri);
     const cachedData = documentSymbolsCache.get(documentUri);
-    console.log("paso2");
     // If no tokens are cached, return 
     if (!cachedData)
         return [];
-    console.log("paso3");
     // Generate completion items based on the cached tokens
     //return generateCompletionItems('', cachedData.symbolTable);
     return generateCompletionItems('', cachedData.symbolTable);

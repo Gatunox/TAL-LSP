@@ -20,14 +20,16 @@ function activate(context) {
     // Options to control the language client
     const clientOptions = {
         // Register the server for all documents by default
-        documentSelector: [{ scheme: 'file', language: '*' }],
+        documentSelector: [{ scheme: 'file', language: 'tal' }],
         synchronize: {
             // Notify the server about file changes to '.clientrc files contained in the workspace
             fileEvents: vscode.workspace.createFileSystemWatcher("**/.clientrc"),
         },
     };
     // Create the language client and start the client.
-    client = new node_1.LanguageClient("REPLACE_ME language-server-id", "REPLACE_ME language server name", serverOptions, clientOptions);
+    client = new node_1.LanguageClient("tal-language-server", // Unique ID for the language server
+    "TAL Language Server", // Human-readable name for the server
+    serverOptions, clientOptions);
     // Start the client. This will also launch the server
     client.start();
     // // Trigger suggestions on each keystroke by executing the command to open suggestions

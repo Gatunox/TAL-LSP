@@ -37,13 +37,9 @@ class Logger {
         return "anonymous function";
     }
     shouldLog(logLevel) {
-        console.log("logLevel " + logLevel);
-        console.log("this.level " + this.level);
         const levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR'];
         const currentLevelIndex = levels.indexOf(this.level);
-        console.log("Logger " + currentLevelIndex);
         const logLevelIndex = levels.indexOf(logLevel);
-        console.log("message " + logLevelIndex);
         return logLevelIndex >= currentLevelIndex;
     }
     log(logLevel, message) {
