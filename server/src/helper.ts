@@ -3,7 +3,10 @@ import log from './log';
 
 const LETTER = /[a-zA-Z_^]/
 const WHITESPACE = /[ \t]+/;  // Matches spaces and tabs
-const NUMBER = /^[0-9]+$/
+const BINARY_NUMBER = /^[0-1]+$/
+const OCTAL_NUMBER = /^[0-7]+$/
+const HEXADECIMAL_NUMBER = /^[0-9A-F]+$/i;
+const DECIMAL_NUMBER = /^[0-9]+$/
 const LINECOMMENT = /^--$/
 const CRLF = /\r\n/;
 const DIRECTIVE = /\?/;
@@ -14,7 +17,7 @@ const DIRECTIVE = /\?/;
 const INDIRECTION_SYMBOLS = [".", ".EXT ", ".SG ",];
 const BASE_ADDRESS_SYMBOLS = ["'P'", "'G'", "'L'", "'P'", "'S'", "'SG'",];
 const DELIMITER_SYMBOLS = ["!", "--", ",", ";", ".", "<", ">", ":", "(", ")", "[", "]", "->", "\"", "=", "#", "'", "$", "?"];
-const NUMERIC_BASE_SYMBOLS = ["%", "%B", "%H",];
+const NUMERIC_BASE_SYMBOLS = ["%H", "%B", "%"];
 /*********************************************************************************************************************************/
 /***********************************************************  OPERATORS  *********************************************************/
 /*********************************************************************************************************************************/
@@ -34,7 +37,6 @@ const BOOLEAN_EXPRESION_OPERATORS = ["AND", "OR", "NOT"];
 /*********************************************************************************************************************************/
 /*********************************************************** DIRECTIVES **********************************************************/
 /*********************************************************************************************************************************/
-
 const SIMPLE_COMPILER_DIRECTIVES = ['NOABORT', 'ABSLIST', 'NOABSLIST', 'BEGINCOMPILATION', 'CHECK', 'NOCHECK', 
     'PUSHCHECK', 'POPCHECK', 'CODE', 'NOCODE', 'PUSHCODE', 'POPCODE', 
     'COMPACT', 'NOCOMPACT', 'DEFEXPAND', 'NODEFEXPAND', 'PUSHDEFEXPAND', 'POPDEFEXPAND', 
@@ -113,7 +115,7 @@ export const getCharacter = (input: string): string => {
     if (!(getCursor() < input.length)) return "";
     const character = input[cursor];
     log.write('DEBUG', `returned "${character}" at ${cursor}.`)
-    cursor++;
+    cursor += 1;
     return character;
 };
 export const getCharacters = (input: string, numberOfCharacter: number): string => {
@@ -182,10 +184,65 @@ export const isWhitespace = (character: string): boolean => {
     log.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`)
     return retVal;
 }
-export const isNumber = (character: string): boolean => {
-    const retVal = NUMBER.test(character);
+export const isNumericBase = (input: string): number => {
+    const symbols = [
+        ...NUMERIC_BASE_SYMBOLS,
+    ];
+
+    for (let symbol of symbols) {
+        if (input.toLowerCase().startsWith(symbol.toLowerCase(), cursor)) {
+            log.write('DEBUG', `returned "${symbol.length}" for character ${symbol}, at ${cursor}`)
+            return symbol.length;
+        }
+    }
+    return 0;
+}
+export const isDecimalNumber = (digit: string): boolean => {
+    
+    const isNumber = DECIMAL_NUMBER.test(digit);
+    log.write('DEBUG', `returned "${isNumber}" for character ${digit}, at ${cursor}`)
+
+    return isNumber;
+}
+export const isOctalNumber = (digit: string): boolean => {
+    
+    const isNumber = OCTAL_NUMBER.test(digit);
+    log.write('DEBUG', `returned "${isNumber}" for character ${digit}, at ${cursor}`)
+
+    return isNumber;
+}
+export const isBinaryNumber = (digit: string): boolean => {
+    
+    const isNumber = BINARY_NUMBER.test(digit);
+    log.write('DEBUG', `returned "${isNumber}" for character ${digit}, at ${cursor}`)
+    
+    return isNumber;
+}
+
+export const isHexadecimalNumber = (digit: string): boolean => {
+    
+    const isNumber = HEXADECIMAL_NUMBER.test(digit);
+    log.write('DEBUG', `returned "${isNumber}" for character ${digit}, at ${cursor}`)
+    
+    return isNumber;
+}
+export const isDot = (character: string): boolean => {
+    const retVal = (character === ".");
     log.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`)
     return retVal;
+}
+export const isNumber = (digit: string, base: string = ""): boolean => {
+    if (base === "") {
+        return isDecimalNumber(digit);
+    } else if (base === '%'){
+        return isOctalNumber(digit);
+    } else if (base === '%B'){
+        return isBinaryNumber(digit);
+    } else if (base === '%H'){
+        return isHexadecimalNumber(digit);
+    }
+    return false
+    //throw new Error(`Invalid base value ${base}, possible value are "", %, %B and %H'`);
 }
 export const isCompilerDirectiveLine = (word: string): boolean => {
     const retVal = DIRECTIVE.test(word);
@@ -193,17 +250,17 @@ export const isCompilerDirectiveLine = (word: string): boolean => {
     return retVal;
 }
 export const isCompilerDirective = (word: string): boolean => {
-    const retVal = COMPILER_DIRECTIVES.some(keyword => keyword.toLowerCase() === word.toLowerCase());
+    const retVal = COMPILER_DIRECTIVES.some(directive => directive.toLowerCase() === word.toLowerCase());
     log.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`)
     return retVal;    
 }
 export const isSimpleCompilerDirective = (word: string): boolean => {
-    const retVal = SIMPLE_COMPILER_DIRECTIVES.some(keyword => keyword.toLowerCase() === word.toLowerCase());
+    const retVal = SIMPLE_COMPILER_DIRECTIVES.some(directive => directive.toLowerCase() === word.toLowerCase());
     log.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`)
     return retVal;    
 }
 export const isStandarFucntions = (word: string): boolean => {
-    const retVal = STANDARD_FUNCTIONS.some(keyword => keyword.toLowerCase() === word.toLowerCase());
+    const retVal = STANDARD_FUNCTIONS.some(stdfunc => stdfunc.toLowerCase() === word.toLowerCase());
     log.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`)
     return retVal;    
 }

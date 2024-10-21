@@ -30,20 +30,36 @@ const tokenize = (input: string) => {
             continue;
         }
 
-        if (helpers.isNumber(helpers.peekCharacter(input))) {
+        if (helpers.isNumericBase(input) || helpers.isNumber(helpers.peekCharacter(input))) {
+
             const startChar = currentCharacter;
-            let number = helpers.getCharacter(input);
+
+            let base = ''
+            let number = '';
+            let baseLength = helpers.isNumericBase(input);
+
+            if (baseLength) {
+                base = helpers.getCharacters(input, baseLength);
+                currentCharacter += base.length;
+                log.write('DEBUG', `isSpecialCharacter retuned true with symbol = ${base}.`)
+            }                
+
+            number = helpers.getCharacter(input);
             currentCharacter += 1;
             log.write('DEBUG', `isNumber retuned true with number = ${number}.`)
 
-            while (helpers.isNumber(helpers.peekCharacter(input))) {
+            while (helpers.getCursor() < input.length &&
+                   helpers.isNumber(helpers.peekCharacter(input), base)||
+                  (helpers.isDot(helpers.peekCharacter(input)) && helpers.peekCharacterAt(input, 1))) {
                 number += helpers.getCharacter(input);
                 currentCharacter += 1;
             }
 
+            // TODO: need to parse subfix D, F, %D and %F
+            
             tokens.push({
                 type: 'Number',
-                value: number,
+                value: base + number,
                 line: currentLine,
                 startCharacter: startChar,
                 endCharacter:  currentCharacter
@@ -58,13 +74,6 @@ const tokenize = (input: string) => {
             currentCharacter += 1;
             log.write('DEBUG', `isLetter retuned true with symbol = ${symbol}.`)
 
-            /**
-             * We want to account for words, so we look ahead in our
-             * string to see if the next character is a letter.
-             *
-             * We assume white space is the end of a word.5679--++
-             * --
-             */
             while (helpers.getCursor() < input.length && 
                   (helpers.isLetter(helpers.peekCharacter(input))|| 
                    helpers.isNumber(helpers.peekCharacter(input)))) {

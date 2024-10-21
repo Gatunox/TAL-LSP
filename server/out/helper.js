@@ -1,11 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isTemplateStructureOperator = exports.isRepetitionOperator = exports.isRemoveIndirectionOperator = exports.isLabelCaseOperator = exports.isMoveOperator = exports.isAssigmentOperator = exports.isDelimiter = exports.isDataType = exports.isFixed = exports.isUnsigned = exports.isReal = exports.isInt = exports.isString = exports.isLiteral = exports.isDefine = exports.isKeyword = exports.isQuote = exports.isParenthesis = exports.isSquareBrackets = exports.isAngleBrackets = exports.isComment = exports.isClosingBit = exports.isOpeneningBit = exports.isClosingIndex = exports.isOpeneningIndex = exports.isClosingParenthesis = exports.isOpeneningParenthesis = exports.isSingleLineComment = exports.isClosingComment = exports.isOpeneningComment = exports.isStandarFucntions = exports.isSimpleCompilerDirective = exports.isCompilerDirective = exports.isCompilerDirectiveLine = exports.isNumber = exports.isWhitespace = exports.isLetter = exports.isNewLine = exports.peekCharacters = exports.peekCharacterAt = exports.peekCharacter = exports.getLastValue = exports.getLastType = exports.getLastElement = exports.getCharacters = exports.getCharacter = exports.skipCharacters = exports.moveCursor = exports.resetCursor = exports.getCursor = void 0;
-exports.isSpecialCharacter = exports.isOperator = exports.isSubLocalContext = exports.isLocalContext = exports.isGlobalContext = exports.isIndirection = exports.isBooleanExpresionOperator = exports.isRelationalExpresionOperator = exports.isArithmeticExpresionOperator = exports.isBitShilfOperator = exports.isBitFieldOperator = exports.isDereferencingOperator = exports.isFixedParamTypeOperator = void 0;
+exports.isDelimiter = exports.isDataType = exports.isFixed = exports.isUnsigned = exports.isReal = exports.isInt = exports.isString = exports.isLiteral = exports.isDefine = exports.isKeyword = exports.isQuote = exports.isParenthesis = exports.isSquareBrackets = exports.isAngleBrackets = exports.isComment = exports.isClosingBit = exports.isOpeneningBit = exports.isClosingIndex = exports.isOpeneningIndex = exports.isClosingParenthesis = exports.isOpeneningParenthesis = exports.isSingleLineComment = exports.isClosingComment = exports.isOpeneningComment = exports.isStandarFucntions = exports.isSimpleCompilerDirective = exports.isCompilerDirective = exports.isCompilerDirectiveLine = exports.isNumber = exports.isDot = exports.isHexadecimalNumber = exports.isBinaryNumber = exports.isOctalNumber = exports.isDecimalNumber = exports.isNumericBase = exports.isWhitespace = exports.isLetter = exports.isNewLine = exports.peekCharacters = exports.peekCharacterAt = exports.peekCharacter = exports.getLastValue = exports.getLastType = exports.getLastElement = exports.getCharacters = exports.getCharacter = exports.skipCharacters = exports.moveCursor = exports.resetCursor = exports.getCursor = void 0;
+exports.isSpecialCharacter = exports.isOperator = exports.isSubLocalContext = exports.isLocalContext = exports.isGlobalContext = exports.isIndirection = exports.isBooleanExpresionOperator = exports.isRelationalExpresionOperator = exports.isArithmeticExpresionOperator = exports.isBitShilfOperator = exports.isBitFieldOperator = exports.isDereferencingOperator = exports.isFixedParamTypeOperator = exports.isTemplateStructureOperator = exports.isRepetitionOperator = exports.isRemoveIndirectionOperator = exports.isLabelCaseOperator = exports.isMoveOperator = exports.isAssigmentOperator = void 0;
 const log_1 = require("./log");
 const LETTER = /[a-zA-Z_^]/;
 const WHITESPACE = /[ \t]+/; // Matches spaces and tabs
-const NUMBER = /^[0-9]+$/;
+const BINARY_NUMBER = /^[0-1]+$/;
+const OCTAL_NUMBER = /^[0-7]+$/;
+const HEXADECIMAL_NUMBER = /^[0-9A-F]+$/i;
+const DECIMAL_NUMBER = /^[0-9]+$/;
 const LINECOMMENT = /^--$/;
 const CRLF = /\r\n/;
 const DIRECTIVE = /\?/;
@@ -15,7 +18,7 @@ const DIRECTIVE = /\?/;
 const INDIRECTION_SYMBOLS = [".", ".EXT ", ".SG ",];
 const BASE_ADDRESS_SYMBOLS = ["'P'", "'G'", "'L'", "'P'", "'S'", "'SG'",];
 const DELIMITER_SYMBOLS = ["!", "--", ",", ";", ".", "<", ">", ":", "(", ")", "[", "]", "->", "\"", "=", "#", "'", "$", "?"];
-const NUMERIC_BASE_SYMBOLS = ["%", "%B", "%H",];
+const NUMERIC_BASE_SYMBOLS = ["%H", "%B", "%"];
 /*********************************************************************************************************************************/
 /***********************************************************  OPERATORS  *********************************************************/
 /*********************************************************************************************************************************/
@@ -113,7 +116,7 @@ const getCharacter = (input) => {
         return "";
     const character = input[cursor];
     log_1.default.write('DEBUG', `returned "${character}" at ${cursor}.`);
-    cursor++;
+    cursor += 1;
     return character;
 };
 exports.getCharacter = getCharacter;
@@ -199,10 +202,64 @@ const isWhitespace = (character) => {
     return retVal;
 };
 exports.isWhitespace = isWhitespace;
-const isNumber = (character) => {
-    const retVal = NUMBER.test(character);
+const isNumericBase = (input) => {
+    const symbols = [
+        ...NUMERIC_BASE_SYMBOLS,
+    ];
+    for (let symbol of symbols) {
+        if (input.toLowerCase().startsWith(symbol.toLowerCase(), cursor)) {
+            log_1.default.write('DEBUG', `returned "${symbol.length}" for character ${symbol}, at ${cursor}`);
+            return symbol.length;
+        }
+    }
+    return 0;
+};
+exports.isNumericBase = isNumericBase;
+const isDecimalNumber = (digit) => {
+    const isNumber = DECIMAL_NUMBER.test(digit);
+    log_1.default.write('DEBUG', `returned "${isNumber}" for character ${digit}, at ${cursor}`);
+    return isNumber;
+};
+exports.isDecimalNumber = isDecimalNumber;
+const isOctalNumber = (digit) => {
+    const isNumber = OCTAL_NUMBER.test(digit);
+    log_1.default.write('DEBUG', `returned "${isNumber}" for character ${digit}, at ${cursor}`);
+    return isNumber;
+};
+exports.isOctalNumber = isOctalNumber;
+const isBinaryNumber = (digit) => {
+    const isNumber = BINARY_NUMBER.test(digit);
+    log_1.default.write('DEBUG', `returned "${isNumber}" for character ${digit}, at ${cursor}`);
+    return isNumber;
+};
+exports.isBinaryNumber = isBinaryNumber;
+const isHexadecimalNumber = (digit) => {
+    const isNumber = HEXADECIMAL_NUMBER.test(digit);
+    log_1.default.write('DEBUG', `returned "${isNumber}" for character ${digit}, at ${cursor}`);
+    return isNumber;
+};
+exports.isHexadecimalNumber = isHexadecimalNumber;
+const isDot = (character) => {
+    const retVal = (character === ".");
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
+};
+exports.isDot = isDot;
+const isNumber = (digit, base = "") => {
+    if (base === "") {
+        return (0, exports.isDecimalNumber)(digit);
+    }
+    else if (base === '%') {
+        return (0, exports.isOctalNumber)(digit);
+    }
+    else if (base === '%B') {
+        return (0, exports.isBinaryNumber)(digit);
+    }
+    else if (base === '%H') {
+        return (0, exports.isHexadecimalNumber)(digit);
+    }
+    return false;
+    //throw new Error(`Invalid base value ${base}, possible value are "", %, %B and %H'`);
 };
 exports.isNumber = isNumber;
 const isCompilerDirectiveLine = (word) => {
@@ -212,19 +269,19 @@ const isCompilerDirectiveLine = (word) => {
 };
 exports.isCompilerDirectiveLine = isCompilerDirectiveLine;
 const isCompilerDirective = (word) => {
-    const retVal = COMPILER_DIRECTIVES.some(keyword => keyword.toLowerCase() === word.toLowerCase());
+    const retVal = COMPILER_DIRECTIVES.some(directive => directive.toLowerCase() === word.toLowerCase());
     log_1.default.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`);
     return retVal;
 };
 exports.isCompilerDirective = isCompilerDirective;
 const isSimpleCompilerDirective = (word) => {
-    const retVal = SIMPLE_COMPILER_DIRECTIVES.some(keyword => keyword.toLowerCase() === word.toLowerCase());
+    const retVal = SIMPLE_COMPILER_DIRECTIVES.some(directive => directive.toLowerCase() === word.toLowerCase());
     log_1.default.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`);
     return retVal;
 };
 exports.isSimpleCompilerDirective = isSimpleCompilerDirective;
 const isStandarFucntions = (word) => {
-    const retVal = STANDARD_FUNCTIONS.some(keyword => keyword.toLowerCase() === word.toLowerCase());
+    const retVal = STANDARD_FUNCTIONS.some(stdfunc => stdfunc.toLowerCase() === word.toLowerCase());
     log_1.default.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`);
     return retVal;
 };
