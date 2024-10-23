@@ -34,8 +34,9 @@ const tokenize = (input: string) => {
 
             const startChar = currentCharacter;
 
-            let base = ''
+            let base = '';
             let number = '';
+            let suffix = '';
             let baseLength = helpers.isNumericBase(input);
 
             if (baseLength) {
@@ -50,16 +51,25 @@ const tokenize = (input: string) => {
 
             while (helpers.getCursor() < input.length &&
                    helpers.isNumber(helpers.peekCharacter(input), base)||
-                  (helpers.isDot(helpers.peekCharacter(input)) && helpers.peekCharacterAt(input, 1))) {
+                  (helpers.isDot(helpers.peekCharacter(input)) && 
+                   helpers.isNumber(helpers.peekCharacterAt(input, 1)))) {
                 number += helpers.getCharacter(input);
                 currentCharacter += 1;
             }
+
+            let suffixLength = helpers.isNumericSuffix(input);
+            
+            if (suffixLength) {
+                suffix = helpers.getCharacters(input, suffixLength);
+                currentCharacter += base.length;
+                log.write('DEBUG', `isSpecialCharacter retuned true with symbol = ${base}.`)
+            }                
 
             // TODO: need to parse subfix D, F, %D and %F
             
             tokens.push({
                 type: 'Number',
-                value: base + number,
+                value: base + number + suffix,
                 line: currentLine,
                 startCharacter: startChar,
                 endCharacter:  currentCharacter

@@ -5,40 +5,6 @@ const log_1 = require("./log");
 let context = 'Global';
 let index = 0;
 let symbolsCache = new Map();
-function getTokensBetween(tokens, open, close, kind, type) {
-    const result = [];
-    let openCount = 0;
-    // Check if we are starting with the expected opening token
-    if (tokens[index].value === open) {
-        openCount++;
-        index += 1;
-    }
-    while (index < tokens.length && openCount > 0) {
-        if (tokens[index].value === open) {
-            openCount++; // Found another opening token
-        }
-        else if (tokens[index].value === close) {
-            openCount--; // Found a closing token
-        }
-        if (openCount > 0 && tokens[index].value !== ',') {
-            result.push(tokens[index]);
-        }
-        index += 1;
-    }
-    return result;
-}
-function getTokensUntilDelimiter(tokens, index, delimiter) {
-    const result = [];
-    while (index < tokens.length && tokens[index].value !== delimiter) {
-        result.push(tokens[index]);
-        index += 1;
-    }
-    // Move past the delimiter if found
-    if (index < tokens.length && tokens[index].value === delimiter) {
-        index += 1;
-    }
-    return { tokens: result, index };
-}
 // Main Parsing Function
 function parseTokens(tokens) {
     log_1.default.write('DEBUG', 'called:');
@@ -199,7 +165,7 @@ function parseLiteral(tokens) {
             context: context,
             line: indent.line,
             startChar: indent.startCharacter,
-            endChar: tokens[index].endCharacter,
+            endChar: indent.endCharacter,
         });
         log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
         if (tokens[index] && tokens[index].type === 'Delimiter' && tokens[index].value === ',') {
@@ -211,6 +177,7 @@ function parseLiteral(tokens) {
         log_1.default.write('DEBUG', tokens[index]);
         index += 1; // Move past comma, since we do not have to skip the ;
     }
+    log_1.default.write('DEBUG', 'finished:');
 }
 function parseDefine(tokens) {
     log_1.default.write('DEBUG', 'called:');

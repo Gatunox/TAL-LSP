@@ -11,8 +11,8 @@
         "--extensionDevelopmentPath=${workspaceRoot}"
       ],
       "outFiles": [
-        "${workspaceRoot}/client/out/*.js",
-        "${workspaceRoot}/server/out/*.js"
+        "${workspaceRoot}/server/out/**/*.js",
+        "${workspaceRoot}/client/out/**/*.js"
       ],
       "preLaunchTask": {
         "type": "npm",

@@ -18,6 +18,7 @@ const INDIRECTION_SYMBOLS = [".", ".EXT ", ".SG ",];
 const BASE_ADDRESS_SYMBOLS = ["'P'", "'G'", "'L'", "'P'", "'S'", "'SG'",];
 const DELIMITER_SYMBOLS = ["!", "--", ",", ";", ".", "<", ">", ":", "(", ")", "[", "]", "->", "\"", "=", "#", "'", "$", "?"];
 const NUMERIC_BASE_SYMBOLS = ["%H", "%B", "%"];
+const NUMERIC_SUFFIX_SYMBOLS = ["%D", "%F", "D", "F"];
 /*********************************************************************************************************************************/
 /***********************************************************  OPERATORS  *********************************************************/
 /*********************************************************************************************************************************/
@@ -185,14 +186,21 @@ export const isWhitespace = (character: string): boolean => {
     return retVal;
 }
 export const isNumericBase = (input: string): number => {
-    const symbols = [
-        ...NUMERIC_BASE_SYMBOLS,
-    ];
 
-    for (let symbol of symbols) {
-        if (input.toLowerCase().startsWith(symbol.toLowerCase(), cursor)) {
-            log.write('DEBUG', `returned "${symbol.length}" for character ${symbol}, at ${cursor}`)
-            return symbol.length;
+    for (let base of NUMERIC_BASE_SYMBOLS) {
+        if (input.toLowerCase().startsWith(base.toLowerCase(), cursor)) {
+            log.write('DEBUG', `returned "${base.length}" for character ${base}, at ${cursor}`)
+            return base.length;
+        }
+    }
+    return 0;
+}
+export const isNumericSuffix = (input: string): number => {
+
+    for (let suffix of NUMERIC_SUFFIX_SYMBOLS) {
+        if (input.toLowerCase().startsWith(suffix.toLowerCase(), cursor)) {
+            log.write('DEBUG', `returned "${suffix.length}" for character ${suffix}, at ${cursor}`)
+            return suffix.length;
         }
     }
     return 0;

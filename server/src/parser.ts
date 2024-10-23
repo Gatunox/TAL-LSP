@@ -1,10 +1,8 @@
-import { lookup } from 'dns';
 import * as helpers from './helper';
 import { Token } from './helper';
 import log from './log';
-import { totalmem } from 'os';
 
-export type SymbolEntry  = {
+export type SymbolEntry = {
     kind: 'Directive' | // The kind of symbol
     'Function' |
     'Variable' |
@@ -22,79 +20,37 @@ export type SymbolEntry  = {
     endChar: number;                                    // End character position
 }
 
-export type ASTNode = 
+export type ASTNode =
     | {
         type: 'Constant';
         value: string;
-      }
+    }
     | {
         type: 'Identifier';
         value: string;
-      }
+    }
     | {
         type: 'UnaryExpression';
         operator: string; // e.g., '+' or '-'
         argument: ASTNode;
-      }
+    }
     | {
         type: 'FunctionCall';
         name: string; // foo
         arguments: ASTNode[];
-      }
+    }
     |
-     {
+    {
         type: 'BinaryExpression';
         operator: string; // e.g., '+', '-', '*', '/'
         left: ASTNode;
         right: ASTNode;
-      };
+    };
 
 let context: string = 'Global';
 let index: number = 0;
 let symbolsCache = new Map<string, SymbolEntry>();
 
-
-function getTokensBetween(tokens: Token[], open: string, close: string, kind: string, type: string): Token[] {
-    const result: Token[] = [];
-    let openCount = 0;
-
-    // Check if we are starting with the expected opening token
-    if (tokens[index].value === open) {
-        openCount++;
-        index += 1;
-    }
-
-    while (index < tokens.length && openCount > 0) {
-        if (tokens[index].value === open) {
-            openCount++;  // Found another opening token
-        } else if (tokens[index].value === close) {
-            openCount--;  // Found a closing token
-        }
-
-        if (openCount > 0 && tokens[index].value !== ',') {
-            result.push(tokens[index]);
-        }
-        index += 1;
-    }
-
-    return result;
-}
-
-function getTokensUntilDelimiter(tokens: Token[], index: number, delimiter: string): { tokens: Token[], index: number } {
-    const result: Token[] = [];
-
-    while (index < tokens.length && tokens[index].value !== delimiter) {
-        result.push(tokens[index]);
-        index += 1;
-    }
-
-    // Move past the delimiter if found
-    if (index < tokens.length && tokens[index].value === delimiter) {
-        index += 1;
-    }
-
-    return { tokens: result, index };
-}
 
 // Main Parsing Function
 function parseTokens(tokens: Token[]): Map<string, SymbolEntry> {
@@ -246,6 +202,7 @@ function parseLiteral(tokens: Token[]) {
             value += tokens[index].value;
             index += 1;
         }
+
         key = context + '.' + indent.value;
         symbolsCache.set(key, {
             kind: 'Literal',
@@ -255,8 +212,9 @@ function parseLiteral(tokens: Token[]) {
             context: context,
             line: indent.line,
             startChar: indent.startCharacter,
-            endChar: tokens[index].endCharacter,
+            endChar: indent.endCharacter,
         });
+
         log.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`)
         if (tokens[index] && tokens[index].type === 'Delimiter' && tokens[index].value === ',') {
             log.write('DEBUG', tokens[index]);
@@ -267,6 +225,7 @@ function parseLiteral(tokens: Token[]) {
         log.write('DEBUG', tokens[index]);
         index += 1;  // Move past comma, since we do not have to skip the ;
     }
+    log.write('DEBUG', 'finished:');
 }
 
 function parseDefine(tokens: Token[]) {
@@ -414,7 +373,7 @@ function parseDeclarations(tokens: Token[]) {
 
     } else if (indirection)
         log.write('DEBUG', '=== indirection: ===');
-        //parseSimplePointer(tokens);
+    //parseSimplePointer(tokens);
 
     else {
         parseSimpleVariable(tokens, type);
@@ -545,11 +504,11 @@ function parseTerm(tokens: Token[], index: number): { AST: ASTNode, index: numbe
     index = result.index;
 
     // Handle '*' and '/' as binary operators
-    while (tokens[index] && 
-          (tokens[index].value === '*' || 
-           tokens[index].value === '/' ||
-           tokens[index].value === "'*'" || 
-           tokens[index].value === "'/'")) {
+    while (tokens[index] &&
+        (tokens[index].value === '*' ||
+            tokens[index].value === '/' ||
+            tokens[index].value === "'*'" ||
+            tokens[index].value === "'/'")) {
         const operatorToken = tokens[index];
         index++;
 
@@ -576,9 +535,9 @@ function parseShift(tokens: Token[], index: number): { AST: ASTNode, index: numb
     index = result.index;
 
     // Loop to handle multiple '<<' operators
-    while (tokens[index] && 
-          (tokens[index].value === '<<' ||
-           tokens[index].value === '>>')){
+    while (tokens[index] &&
+        (tokens[index].value === '<<' ||
+            tokens[index].value === '>>')) {
         const operatorToken = tokens[index];
         index++;  // Move past '<<'
 
@@ -732,7 +691,7 @@ function getTokenValue(tokens: Token[]): string {
     if (!retVal) {
         log.write('ERROR', tokens[index]); //NO NO NO TODO: see that to do.
     }
-    
+
     return retVal;
 }
 

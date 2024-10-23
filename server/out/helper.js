@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isDelimiter = exports.isDataType = exports.isFixed = exports.isUnsigned = exports.isReal = exports.isInt = exports.isString = exports.isLiteral = exports.isDefine = exports.isKeyword = exports.isQuote = exports.isParenthesis = exports.isSquareBrackets = exports.isAngleBrackets = exports.isComment = exports.isClosingBit = exports.isOpeneningBit = exports.isClosingIndex = exports.isOpeneningIndex = exports.isClosingParenthesis = exports.isOpeneningParenthesis = exports.isSingleLineComment = exports.isClosingComment = exports.isOpeneningComment = exports.isStandarFucntions = exports.isSimpleCompilerDirective = exports.isCompilerDirective = exports.isCompilerDirectiveLine = exports.isNumber = exports.isDot = exports.isHexadecimalNumber = exports.isBinaryNumber = exports.isOctalNumber = exports.isDecimalNumber = exports.isNumericBase = exports.isWhitespace = exports.isLetter = exports.isNewLine = exports.peekCharacters = exports.peekCharacterAt = exports.peekCharacter = exports.getLastValue = exports.getLastType = exports.getLastElement = exports.getCharacters = exports.getCharacter = exports.skipCharacters = exports.moveCursor = exports.resetCursor = exports.getCursor = void 0;
-exports.isSpecialCharacter = exports.isOperator = exports.isSubLocalContext = exports.isLocalContext = exports.isGlobalContext = exports.isIndirection = exports.isBooleanExpresionOperator = exports.isRelationalExpresionOperator = exports.isArithmeticExpresionOperator = exports.isBitShilfOperator = exports.isBitFieldOperator = exports.isDereferencingOperator = exports.isFixedParamTypeOperator = exports.isTemplateStructureOperator = exports.isRepetitionOperator = exports.isRemoveIndirectionOperator = exports.isLabelCaseOperator = exports.isMoveOperator = exports.isAssigmentOperator = void 0;
+exports.isDataType = exports.isFixed = exports.isUnsigned = exports.isReal = exports.isInt = exports.isString = exports.isLiteral = exports.isDefine = exports.isKeyword = exports.isQuote = exports.isParenthesis = exports.isSquareBrackets = exports.isAngleBrackets = exports.isComment = exports.isClosingBit = exports.isOpeneningBit = exports.isClosingIndex = exports.isOpeneningIndex = exports.isClosingParenthesis = exports.isOpeneningParenthesis = exports.isSingleLineComment = exports.isClosingComment = exports.isOpeneningComment = exports.isStandarFucntions = exports.isSimpleCompilerDirective = exports.isCompilerDirective = exports.isCompilerDirectiveLine = exports.isNumber = exports.isDot = exports.isHexadecimalNumber = exports.isBinaryNumber = exports.isOctalNumber = exports.isDecimalNumber = exports.isNumericSuffix = exports.isNumericBase = exports.isWhitespace = exports.isLetter = exports.isNewLine = exports.peekCharacters = exports.peekCharacterAt = exports.peekCharacter = exports.getLastValue = exports.getLastType = exports.getLastElement = exports.getCharacters = exports.getCharacter = exports.skipCharacters = exports.moveCursor = exports.resetCursor = exports.getCursor = void 0;
+exports.isSpecialCharacter = exports.isOperator = exports.isSubLocalContext = exports.isLocalContext = exports.isGlobalContext = exports.isIndirection = exports.isBooleanExpresionOperator = exports.isRelationalExpresionOperator = exports.isArithmeticExpresionOperator = exports.isBitShilfOperator = exports.isBitFieldOperator = exports.isDereferencingOperator = exports.isFixedParamTypeOperator = exports.isTemplateStructureOperator = exports.isRepetitionOperator = exports.isRemoveIndirectionOperator = exports.isLabelCaseOperator = exports.isMoveOperator = exports.isAssigmentOperator = exports.isDelimiter = void 0;
 const log_1 = require("./log");
 const LETTER = /[a-zA-Z_^]/;
 const WHITESPACE = /[ \t]+/; // Matches spaces and tabs
@@ -19,6 +19,7 @@ const INDIRECTION_SYMBOLS = [".", ".EXT ", ".SG ",];
 const BASE_ADDRESS_SYMBOLS = ["'P'", "'G'", "'L'", "'P'", "'S'", "'SG'",];
 const DELIMITER_SYMBOLS = ["!", "--", ",", ";", ".", "<", ">", ":", "(", ")", "[", "]", "->", "\"", "=", "#", "'", "$", "?"];
 const NUMERIC_BASE_SYMBOLS = ["%H", "%B", "%"];
+const NUMERIC_SUFFIX_SYMBOLS = ["%D", "%F", "D", "F"];
 /*********************************************************************************************************************************/
 /***********************************************************  OPERATORS  *********************************************************/
 /*********************************************************************************************************************************/
@@ -203,18 +204,25 @@ const isWhitespace = (character) => {
 };
 exports.isWhitespace = isWhitespace;
 const isNumericBase = (input) => {
-    const symbols = [
-        ...NUMERIC_BASE_SYMBOLS,
-    ];
-    for (let symbol of symbols) {
-        if (input.toLowerCase().startsWith(symbol.toLowerCase(), cursor)) {
-            log_1.default.write('DEBUG', `returned "${symbol.length}" for character ${symbol}, at ${cursor}`);
-            return symbol.length;
+    for (let base of NUMERIC_BASE_SYMBOLS) {
+        if (input.toLowerCase().startsWith(base.toLowerCase(), cursor)) {
+            log_1.default.write('DEBUG', `returned "${base.length}" for character ${base}, at ${cursor}`);
+            return base.length;
         }
     }
     return 0;
 };
 exports.isNumericBase = isNumericBase;
+const isNumericSuffix = (input) => {
+    for (let suffix of NUMERIC_SUFFIX_SYMBOLS) {
+        if (input.toLowerCase().startsWith(suffix.toLowerCase(), cursor)) {
+            log_1.default.write('DEBUG', `returned "${suffix.length}" for character ${suffix}, at ${cursor}`);
+            return suffix.length;
+        }
+    }
+    return 0;
+};
+exports.isNumericSuffix = isNumericSuffix;
 const isDecimalNumber = (digit) => {
     const isNumber = DECIMAL_NUMBER.test(digit);
     log_1.default.write('DEBUG', `returned "${isNumber}" for character ${digit}, at ${cursor}`);
