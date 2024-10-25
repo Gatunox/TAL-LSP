@@ -13,14 +13,19 @@ export type SymbolEntry = {
     'Define';
     type: string;                                       // Data type (for variables) or return type (for functions)
     name: string;                                       // The name of the symbol (e.g., function name, variable name)
-    value: string | ASTNode | Token[] | null;           // The value of a literal or variable
+    size: number;
+    value: string | ASTNode | Token[];                  // The value of a literal or variable
     context: string;                                    // The context Function, Struct, global where the symbol is declared
-    line: number;                                       // Line number where the symbol is declared
+    line: string | number;                              // Line number where the symbol is declared
     startChar: number;                                  // Start character position
     endChar: number;                                    // End character position
 }
 
 export type ASTNode =
+    {
+        type: 'ConstantArray';
+        elements: ASTNode[];
+    }
     | {
         type: 'Constant';
         value: string;
@@ -139,6 +144,7 @@ function parseDirectives(tokens: Token[]) {
                 kind: 'Directive',
                 type: 'none',
                 name: directive.value,
+                size: 1,
                 value: '',
                 context: context,
                 line: directive.line,
@@ -208,6 +214,7 @@ function parseLiteral(tokens: Token[]) {
             kind: 'Literal',
             type: '',
             name: indent.value,
+            size : 1,
             value: value,
             context: context,
             line: indent.line,
@@ -250,6 +257,7 @@ function parseDefine(tokens: Token[]) {
             kind: 'Define',
             type: 'Indentifier',
             name: indent.value,
+            size: 1,
             value: indent.value,
             context: context,
             line: indent.line,
@@ -281,6 +289,7 @@ function parseDefine(tokens: Token[]) {
                     kind: 'Define',
                     type: 'Parameter',
                     name: parameter.value,
+                    size: 1,
                     value: parameter.value,
                     context: context,
                     line: parameter.line,
@@ -319,6 +328,7 @@ function parseDefine(tokens: Token[]) {
             kind: 'Define',
             type: 'Body',
             name: indent.value,
+            size: 1,
             value: definebody,
             context: context,
             line: indent.line,
@@ -351,72 +361,79 @@ function parseDefine(tokens: Token[]) {
 function parseDeclarations(tokens: Token[]) {
     log.write('DEBUG', 'called:');
 
-    let openbracketoffset = 1
-    let colonoffset = 3
-    let closebracketoffset = 5
-    let type = parseDataType(tokens);
+    let type = parseDataType(tokens);   
+    log.write('DEBUG', 'type: ' + type);
     let indirection = checkForTypeAt(tokens, index, 'Indirection');
 
-    if (indirection) {
-        openbracketoffset += 1;
-        colonoffset += 1;
-        closebracketoffset += 1;
-    }
-
-    let isArray = (checkForValueAt(tokens, index + openbracketoffset, '[') &&
-        checkForValueAt(tokens, index + colonoffset, ':') &&
-        checkForValueAt(tokens, index + closebracketoffset, ']'));
-
-    if (isArray) {
-        log.write('DEBUG', '=== isArray: ===');
-        //parseArrayDeclaration();
-
-    } else if (indirection)
+    if (indirection)
         log.write('DEBUG', '=== indirection: ===');
-    //parseSimplePointer(tokens);
-
+        //parseSimplePointer(tokens);
     else {
-        parseSimpleVariable(tokens, type);
-
+        parseVariable(tokens, type);
     }
 }
 
-function parseSimpleVariable(tokens: Token[], type: string) {
+function parseVariable(tokens: Token[], type: string) {
     log.write('DEBUG', 'called:');
 
-    let line = tokens[index].line;
-    let startChar = tokens[index].startCharacter;
-    let endChar = tokens[index].endCharacter;
-    let init = '';
+    const openbracketoffset = 0;
+    const lowerBoundOffet = 1;
+    const colonoffset = 2;
+    const upperBoundOffet = 3;
+    const closebracketoffset = 4;
+    const startline = tokens[index].line;
+    const startChar = tokens[index].startCharacter;
 
+    let endline = tokens[index].line;
+    let endChar = tokens[index].endCharacter;
+    let lowerBoud = 0;
+    let upperBound = 0;
+    let initialization = null;
     do {
         if (checkForValue(tokens, ",")) {
             index += 1; // Skip , in case of multiples varibles
         }
 
-        let ident = parseIdent(tokens);
+        const ident = parseIdent(tokens);
+   
+        if (checkForValueAt(tokens, index + openbracketoffset, '[') &&
+            checkForValueAt(tokens, index + colonoffset, ':') &&
+            checkForValueAt(tokens, index + closebracketoffset, ']')) {
+            
+            log.write('DEBUG', '=== isArray: ===');
+            lowerBoud  = Number(tokens[index + lowerBoundOffet].value);
+            upperBound = Number(tokens[index + upperBoundOffet].value);
+
+            index += (closebracketoffset +  1);
+        }
+
         if (!checkForValue(tokens, ";") && !checkForValue(tokens, ':=')) {
             log.write('ERROR', 'parseVariable failed.');
         }
 
-        let initialization = null;
         if (tokens[index].value === ':=') {
             log.write('DEBUG', tokens[index]);
             index += 1; // Skip :=
+
             const expressionResult = parseExpression(tokens, index);
             log.write('DEBUG', JSON.stringify(expressionResult));
+            
             initialization = expressionResult.AST;
             index = expressionResult.index;
         }
 
+        endline = tokens[index - 1].line;
         endChar = tokens[index - 1].endCharacter;
 
-        let key = context + '.' + ident;
+        const key = context + '.' + ident;
+        const line = '[' + startline.toString() + ':' + endline.toString() + ']';
+        const size = upperBound - lowerBoud + 1; 
         symbolsCache.set(key, {
             kind: 'Variable',
             type: type,
             name: ident,
-            value: initialization,
+            size: size,
+            value: initialization || "",
             context: context,
             line: line,
             startChar: startChar,
@@ -433,12 +450,14 @@ function parseSimpleVariable(tokens: Token[], type: string) {
 
 function parseDataType(tokens: Token[]): string {
     log.write('DEBUG', 'called:');
+
     let openParenthesis = 1
     let closeParenthesis = 3
     if (helpers.isString(tokens[index].value)) {
 
+        let value = tokens[index].value;
         index += 1;
-        return tokens[index].value;
+        return value;
 
     } else if (helpers.isInt(tokens[index].value) ||
         helpers.isReal(tokens[index].value) ||
@@ -470,6 +489,11 @@ function parseDataType(tokens: Token[]): string {
 function parseExpression(tokens: Token[], index: number): { AST: ASTNode, index: number } {
     log.write('DEBUG', 'called:');
 
+    // Detect if the expression is an array literal
+    if (tokens[index].value === '[') {
+        return parseArrayLiteral(tokens, index);
+    }
+
     let result = parseTerm(tokens, index);
     index = result.index;
 
@@ -495,6 +519,40 @@ function parseExpression(tokens: Token[], index: number): { AST: ASTNode, index:
     return result;
 }
 
+function parseArrayLiteral(tokens: Token[], index: number): { AST: ASTNode, index: number } {
+    log.write('DEBUG', 'called:');
+
+    const elements: ASTNode[] = [];
+    index++; // Skip the '['
+
+    while (tokens[index] && tokens[index].value !== ']') {
+        const elementResult = parseExpression(tokens, index);
+        log.write('DEBUG', JSON.stringify(elementResult));
+        elements.push(elementResult.AST);
+        index = elementResult.index;
+
+        // Skip the ',' if there are multiple elements
+        if (tokens[index] && tokens[index].value === ',') {
+            index++;
+            index = skipNewlines(tokens, index); // Skip any newlines after the ','
+        }
+    }
+
+    if (tokens[index] && tokens[index].value === ']') {
+        index++; // Skip the ']'
+    } else {
+        throw new Error(`Expected ']' at line ${tokens[index].line} but found '${tokens[index].value}'`);
+    }
+
+    return {
+        AST: {
+            type: 'ConstantArray',
+            elements: elements
+        },
+        index,
+    };
+}
+
 // Parse a term which includes '*' and '/' with higher precedence.
 function parseTerm(tokens: Token[], index: number): { AST: ASTNode, index: number } {
     log.write('DEBUG', 'called:');
@@ -505,10 +563,10 @@ function parseTerm(tokens: Token[], index: number): { AST: ASTNode, index: numbe
 
     // Handle '*' and '/' as binary operators
     while (tokens[index] &&
-        (tokens[index].value === '*' ||
-            tokens[index].value === '/' ||
-            tokens[index].value === "'*'" ||
-            tokens[index].value === "'/'")) {
+          (tokens[index].value === '*' ||
+           tokens[index].value === '/' ||
+           tokens[index].value === "'*'" ||
+           tokens[index].value === "'/'")) {
         const operatorToken = tokens[index];
         index++;
 
@@ -530,6 +588,7 @@ function parseTerm(tokens: Token[], index: number): { AST: ASTNode, index: numbe
 }
 
 function parseShift(tokens: Token[], index: number): { AST: ASTNode, index: number } {
+    log.write('DEBUG', 'called:');
     // Parse a unary first (which handles unary minus and other factors)
     let result = parseUnary(tokens, index);
     index = result.index;
@@ -605,6 +664,7 @@ function parseFunctionCall(tokens: Token[], index: number): { AST: ASTNode, inde
 
         if (tokens[index].value === ',') {
             index++; // Skip ',' if multiple arguments
+            index = skipNewlines(tokens, index); // Skip any newlines after the ','
         }
     }
 
@@ -625,6 +685,7 @@ function parseFactor(tokens: Token[], index: number): { AST: ASTNode, index: num
     log.write('DEBUG', 'called:');
 
     const token = tokens[index];
+    log.write('DEBUG', token);
 
     if (token.type === 'Number') {
         index++;
@@ -777,6 +838,7 @@ function parseSimpleDirective(tokens: Token[]) {
         kind: 'Directive',
         type: 'none',
         name: directive.value,
+        size: 1,
         value: '',
         context: context,
         line: directive.line,
@@ -802,6 +864,7 @@ function parseTargetDirective(tokens: Token[]) {
         kind: 'Directive',
         type: 'none',
         name: target.value,
+        size: 1,
         value: value.value,
         context: context,
         line: target.line,
@@ -836,6 +899,7 @@ function parseSourceDirective(tokens: Token[]) {
                 kind: 'Function',
                 type: 'none',
                 name: func.value,
+                size: 1,
                 value: '',
                 context: source,
                 line: func.line,
@@ -849,6 +913,15 @@ function parseSourceDirective(tokens: Token[]) {
     if (tokens[index] && tokens[index].type === 'Delimiter' && tokens[index].value === ')') {
         log.write('DEBUG', tokens[index]);
         index += 1;  // Move past the )
+    }
+    return index;
+}
+
+function skipNewlines(tokens: Token[], index: number): number {
+    log.write('DEBUG', 'called:');
+
+    while (index < tokens.length && tokens[index].type === 'NewLine') {
+        index += 1;  // Move past the comma;
     }
     return index;
 }
