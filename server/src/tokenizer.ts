@@ -43,36 +43,36 @@ const tokenize = (input: string) => {
                 base = helpers.getCharacters(input, baseLength);
                 currentCharacter += base.length;
                 log.write('DEBUG', `isSpecialCharacter retuned true with symbol = ${base}.`)
-            }                
+            }
 
             number = helpers.getCharacter(input);
             currentCharacter += 1;
             log.write('DEBUG', `isNumber retuned true with number = ${number}.`)
 
             while (helpers.getCursor() < input.length &&
-                   helpers.isNumber(helpers.peekCharacter(input), base)||
-                  (helpers.isDot(helpers.peekCharacter(input)) && 
-                   helpers.isNumber(helpers.peekCharacterAt(input, 1)))) {
+                helpers.isNumber(helpers.peekCharacter(input), base) ||
+                (helpers.isDot(helpers.peekCharacter(input)) &&
+                    helpers.isNumber(helpers.peekCharacterAt(input, 1)))) {
                 number += helpers.getCharacter(input);
                 currentCharacter += 1;
             }
 
             let suffixLength = helpers.isNumericSuffix(input);
-            
+
             if (suffixLength) {
                 suffix = helpers.getCharacters(input, suffixLength);
                 currentCharacter += base.length;
                 log.write('DEBUG', `isSpecialCharacter retuned true with symbol = ${base}.`)
-            }                
+            }
 
             // TODO: need to parse subfix D, F, %D and %F
-            
+
             tokens.push({
                 type: 'Number',
                 value: base + number + suffix,
                 line: currentLine,
                 startCharacter: startChar,
-                endCharacter:  currentCharacter
+                endCharacter: currentCharacter
             });
             log.write('DEBUG', `Number Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
             continue;
@@ -84,9 +84,9 @@ const tokenize = (input: string) => {
             currentCharacter += 1;
             log.write('DEBUG', `isLetter retuned true with symbol = ${symbol}.`)
 
-            while (helpers.getCursor() < input.length && 
-                  (helpers.isLetter(helpers.peekCharacter(input))|| 
-                   helpers.isNumber(helpers.peekCharacter(input)))) {
+            while (helpers.getCursor() < input.length &&
+                (helpers.isLetter(helpers.peekCharacter(input)) ||
+                    helpers.isNumber(helpers.peekCharacter(input)))) {
                 symbol += helpers.getCharacter(input);
                 currentCharacter += 1;
             }
@@ -142,7 +142,7 @@ const tokenize = (input: string) => {
 
             if (symbol) {
                 if (symbol === ".") {
-                    if (helpers.isDataType(helpers.getLastValue(tokens))) {
+                    if (helpers.isDataType(helpers.getPreviousTokenValue(tokens))) {
                         log.write('DEBUG', `isDataType retuned true with number = ${symbol}.`)
 
                         tokens.push({
@@ -154,7 +154,7 @@ const tokenize = (input: string) => {
                         });
                         log.write('DEBUG', `Indirection Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
                         continue;
-                    } else  {
+                    } else {
                         log.write('DEBUG', `isDataType retuned FALSE with number = ${symbol}.`)
 
                         tokens.push({
@@ -180,7 +180,7 @@ const tokenize = (input: string) => {
                     });
                     log.write('DEBUG', `isOpeneningComment Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
                     continue;
-                }                
+                }
                 if (helpers.isSingleLineComment(symbol)) {
                     log.write('DEBUG', `isSingleLineComment retuned true with number = ${symbol}.`)
 
@@ -196,7 +196,7 @@ const tokenize = (input: string) => {
                 }
                 if (helpers.isCompilerDirectiveLine(symbol) && startChar === 0) {
                     log.write('DEBUG', `CompilerDirective retuned true with number = ${symbol}.`)
-        
+
                     tokens.push({
                         type: 'DirectiveLine',
                         value: symbol,
@@ -205,6 +205,20 @@ const tokenize = (input: string) => {
                         endCharacter: currentCharacter
                     });
                     log.write('DEBUG', `Directive Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
+                    continue;
+                }
+                if (helpers.isBaseAddressSymbol(symbol)) {
+                    const type = helpers.isReadOnlyArray(symbol)
+                        ? "ReadOnlyArray"
+                        : "BaseAddressEquivalence";
+                    tokens.push({
+                        type: type,
+                        value: symbol,
+                        line: currentLine,
+                        startCharacter: startChar,
+                        endCharacter: currentCharacter
+                    });
+                    log.write('DEBUG', `Delimiter Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
                     continue;
                 }
                 if (helpers.isIndirection(symbol)) {

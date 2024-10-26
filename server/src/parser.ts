@@ -22,35 +22,46 @@ export type SymbolEntry = {
 }
 
 export type ASTNode =
-    {
-        type: 'ConstantArray';
-        elements: ASTNode[];
-    }
-    | {
-        type: 'Constant';
-        value: string;
-    }
-    | {
-        type: 'Identifier';
-        value: string;
-    }
-    | {
-        type: 'UnaryExpression';
-        operator: string; // e.g., '+' or '-'
-        argument: ASTNode;
-    }
-    | {
-        type: 'FunctionCall';
-        name: string; // foo
-        arguments: ASTNode[];
-    }
-    |
-    {
-        type: 'BinaryExpression';
-        operator: string; // e.g., '+', '-', '*', '/'
-        left: ASTNode;
-        right: ASTNode;
-    };
+    ConstantArrayNode |
+    ConstantNode |
+    IdentifierNode |
+    UnaryExpressionNode |
+    FunctionCallNode |
+    BinaryExpressionNode;
+
+export interface ConstantArrayNode {
+    type: 'ConstantArray';
+    elements: ASTNode[];
+}
+
+export interface ConstantNode {
+    type: 'Constant';
+    value: string;
+}
+
+export interface IdentifierNode {
+    type: 'Identifier';
+    value: string;
+}
+
+export interface UnaryExpressionNode {
+    type: 'UnaryExpression';
+    operator: string; // e.g., '+' or '-'
+    argument: ASTNode;
+}
+
+export interface FunctionCallNode {
+    type: 'FunctionCall';
+    name: string; // e.g., 'foo'
+    arguments: ASTNode[];
+}
+
+export interface BinaryExpressionNode {
+    type: 'BinaryExpression';
+    operator: string; // e.g., '+', '-', '*', '/'
+    left: ASTNode;
+    right: ASTNode;
+}
 
 let context: string = 'Global';
 let index: number = 0;
@@ -214,7 +225,7 @@ function parseLiteral(tokens: Token[]) {
             kind: 'Literal',
             type: '',
             name: indent.value,
-            size : 1,
+            size: 1,
             value: value,
             context: context,
             line: indent.line,
@@ -361,13 +372,13 @@ function parseDefine(tokens: Token[]) {
 function parseDeclarations(tokens: Token[]) {
     log.write('DEBUG', 'called:');
 
-    let type = parseDataType(tokens);   
+    let type = parseDataType(tokens);
     log.write('DEBUG', 'type: ' + type);
     let indirection = checkForTypeAt(tokens, index, 'Indirection');
 
     if (indirection)
         log.write('DEBUG', '=== indirection: ===');
-        //parseSimplePointer(tokens);
+    //parseSimplePointer(tokens);
     else {
         parseVariable(tokens, type);
     }
@@ -395,20 +406,27 @@ function parseVariable(tokens: Token[], type: string) {
         }
 
         const ident = parseIdent(tokens);
-   
+
         if (checkForValueAt(tokens, index + openbracketoffset, '[') &&
             checkForValueAt(tokens, index + colonoffset, ':') &&
             checkForValueAt(tokens, index + closebracketoffset, ']')) {
-            
+
             log.write('DEBUG', '=== isArray: ===');
-            lowerBoud  = Number(tokens[index + lowerBoundOffet].value);
+            lowerBoud = Number(tokens[index + lowerBoundOffet].value);
             upperBound = Number(tokens[index + upperBoundOffet].value);
 
-            index += (closebracketoffset +  1);
+            index += (closebracketoffset + 1);
+        }
+
+        // look for Read-Only arrays
+        if (checkForValue(tokens, "=") &&
+            checkForValueAt(tokens, index + 1, "'P'")) {
+            index += 2; // Skip = and 'P'
         }
 
         if (!checkForValue(tokens, ";") && !checkForValue(tokens, ':=')) {
             log.write('ERROR', 'parseVariable failed.');
+            throw new Error(`Expected ';' or ':=' at line ${tokens[index].line} but found '${tokens[index].value}'`);
         }
 
         if (tokens[index].value === ':=') {
@@ -417,7 +435,7 @@ function parseVariable(tokens: Token[], type: string) {
 
             const expressionResult = parseExpression(tokens, index);
             log.write('DEBUG', JSON.stringify(expressionResult));
-            
+
             initialization = expressionResult.AST;
             index = expressionResult.index;
         }
@@ -427,7 +445,7 @@ function parseVariable(tokens: Token[], type: string) {
 
         const key = context + '.' + ident;
         const line = '[' + startline.toString() + ':' + endline.toString() + ']';
-        const size = upperBound - lowerBoud + 1; 
+        const size = upperBound - lowerBoud + 1;
         symbolsCache.set(key, {
             kind: 'Variable',
             type: type,
@@ -563,10 +581,10 @@ function parseTerm(tokens: Token[], index: number): { AST: ASTNode, index: numbe
 
     // Handle '*' and '/' as binary operators
     while (tokens[index] &&
-          (tokens[index].value === '*' ||
-           tokens[index].value === '/' ||
-           tokens[index].value === "'*'" ||
-           tokens[index].value === "'/'")) {
+        (tokens[index].value === '*' ||
+            tokens[index].value === '/' ||
+            tokens[index].value === "'*'" ||
+            tokens[index].value === "'/'")) {
         const operatorToken = tokens[index];
         index++;
 

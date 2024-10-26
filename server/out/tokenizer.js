@@ -123,7 +123,7 @@ const tokenize = (input) => {
             log_1.default.write('DEBUG', `isSpecialCharacter retuned true with symbol = ${symbol}.`);
             if (symbol) {
                 if (symbol === ".") {
-                    if (helpers.isDataType(helpers.getLastValue(tokens))) {
+                    if (helpers.isDataType(helpers.getPreviousTokenValue(tokens))) {
                         log_1.default.write('DEBUG', `isDataType retuned true with number = ${symbol}.`);
                         tokens.push({
                             type: 'Indirection',
@@ -182,6 +182,20 @@ const tokenize = (input) => {
                         endCharacter: currentCharacter
                     });
                     log_1.default.write('DEBUG', `Directive Found = ${JSON.stringify(tokens[tokens.length - 1])}.`);
+                    continue;
+                }
+                if (helpers.isBaseAddressSymbol(symbol)) {
+                    const type = helpers.isReadOnlyArray(symbol)
+                        ? "ReadOnlyArray"
+                        : "BaseAddressEquivalence";
+                    tokens.push({
+                        type: type,
+                        value: symbol,
+                        line: currentLine,
+                        startCharacter: startChar,
+                        endCharacter: currentCharacter
+                    });
+                    log_1.default.write('DEBUG', `Delimiter Found = ${JSON.stringify(tokens[tokens.length - 1])}.`);
                     continue;
                 }
                 if (helpers.isIndirection(symbol)) {

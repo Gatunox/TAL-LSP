@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isDataType = exports.isFixed = exports.isUnsigned = exports.isReal = exports.isInt = exports.isString = exports.isLiteral = exports.isDefine = exports.isKeyword = exports.isQuote = exports.isParenthesis = exports.isSquareBrackets = exports.isAngleBrackets = exports.isComment = exports.isClosingBit = exports.isOpeneningBit = exports.isClosingIndex = exports.isOpeneningIndex = exports.isClosingParenthesis = exports.isOpeneningParenthesis = exports.isSingleLineComment = exports.isClosingComment = exports.isOpeneningComment = exports.isStandarFucntions = exports.isSimpleCompilerDirective = exports.isCompilerDirective = exports.isCompilerDirectiveLine = exports.isNumber = exports.isDot = exports.isHexadecimalNumber = exports.isBinaryNumber = exports.isOctalNumber = exports.isDecimalNumber = exports.isNumericSuffix = exports.isNumericBase = exports.isWhitespace = exports.isLetter = exports.isNewLine = exports.peekCharacters = exports.peekCharacterAt = exports.peekCharacter = exports.getLastValue = exports.getLastType = exports.getLastElement = exports.getCharacters = exports.getCharacter = exports.skipCharacters = exports.moveCursor = exports.resetCursor = exports.getCursor = void 0;
-exports.isSpecialCharacter = exports.isOperator = exports.isSubLocalContext = exports.isLocalContext = exports.isGlobalContext = exports.isIndirection = exports.isBooleanExpresionOperator = exports.isRelationalExpresionOperator = exports.isArithmeticExpresionOperator = exports.isBitShilfOperator = exports.isBitFieldOperator = exports.isDereferencingOperator = exports.isFixedParamTypeOperator = exports.isTemplateStructureOperator = exports.isRepetitionOperator = exports.isRemoveIndirectionOperator = exports.isLabelCaseOperator = exports.isMoveOperator = exports.isAssigmentOperator = exports.isDelimiter = void 0;
+exports.isDataType = exports.isFixed = exports.isUnsigned = exports.isReal = exports.isInt = exports.isString = exports.isLiteral = exports.isDefine = exports.isKeyword = exports.isQuote = exports.isParenthesis = exports.isSquareBrackets = exports.isAngleBrackets = exports.isComment = exports.isClosingBit = exports.isOpeneningBit = exports.isClosingIndex = exports.isOpeneningIndex = exports.isClosingParenthesis = exports.isOpeneningParenthesis = exports.isSingleLineComment = exports.isClosingComment = exports.isOpeneningComment = exports.isStandarFucntions = exports.isSimpleCompilerDirective = exports.isCompilerDirective = exports.isCompilerDirectiveLine = exports.isNumber = exports.isDot = exports.isHexadecimalNumber = exports.isBinaryNumber = exports.isOctalNumber = exports.isDecimalNumber = exports.isNumericSuffix = exports.isNumericBase = exports.isWhitespace = exports.isLetter = exports.isNewLine = exports.peekCharacters = exports.peekCharacterAt = exports.peekCharacter = exports.getPreviousTokenValue = exports.getLastType = exports.getLastElement = exports.getCharacters = exports.getCharacter = exports.skipCharacters = exports.moveCursor = exports.resetCursor = exports.getCursor = void 0;
+exports.isSpecialCharacter = exports.isOperator = exports.isReadOnlyArray = exports.isSubLocalContext = exports.isLocalContext = exports.isGlobalContext = exports.isBaseAddressSymbol = exports.isIndirection = exports.isBooleanExpresionOperator = exports.isRelationalExpresionOperator = exports.isArithmeticExpresionOperator = exports.isBitShilfOperator = exports.isBitFieldOperator = exports.isDereferencingOperator = exports.isFixedParamTypeOperator = exports.isTemplateStructureOperator = exports.isRepetitionOperator = exports.isRemoveIndirectionOperator = exports.isLabelCaseOperator = exports.isMoveOperator = exports.isAssigmentOperator = exports.isDelimiter = void 0;
 const log_1 = require("./log");
 const LETTER = /[a-zA-Z_^]/;
 const WHITESPACE = /[ \t]+/; // Matches spaces and tabs
@@ -122,7 +122,7 @@ const getCharacter = (input) => {
 };
 exports.getCharacter = getCharacter;
 const getCharacters = (input, numberOfCharacter) => {
-    if (!((0, exports.getCursor)() + numberOfCharacter < input.length))
+    if (!((0, exports.getCursor)() + numberOfCharacter <= input.length))
         return "";
     const characters = input.substring(cursor, cursor + numberOfCharacter);
     log_1.default.write('DEBUG', `returned "${characters}", (${characters.length}), at ${cursor}, for ${numberOfCharacter}.`);
@@ -148,7 +148,7 @@ const getLastType = (arr) => {
     }
 };
 exports.getLastType = getLastType;
-const getLastValue = (arr) => {
+const getPreviousTokenValue = (arr) => {
     const token = (0, exports.getLastElement)(arr);
     log_1.default.write('DEBUG', `returned ${token.value}.`);
     if (token) {
@@ -158,7 +158,7 @@ const getLastValue = (arr) => {
         return "";
     }
 };
-exports.getLastValue = getLastValue;
+exports.getPreviousTokenValue = getPreviousTokenValue;
 const peekCharacter = (input) => {
     if (!((0, exports.getCursor)() < input.length))
         return "";
@@ -522,6 +522,12 @@ const isIndirection = (character) => {
     return retVal;
 };
 exports.isIndirection = isIndirection;
+const isBaseAddressSymbol = (character) => {
+    const retVal = BASE_ADDRESS_SYMBOLS.some(indirection => indirection.toLowerCase() === character.toLowerCase());
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
+    return retVal;
+};
+exports.isBaseAddressSymbol = isBaseAddressSymbol;
 const isGlobalContext = (context) => {
     const retVal = (context === "Global");
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${context}, at ${cursor}`);
@@ -540,6 +546,12 @@ const isSubLocalContext = (context) => {
     return retVal;
 };
 exports.isSubLocalContext = isSubLocalContext;
+const isReadOnlyArray = (value) => {
+    const retVal = (value === "'P'");
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${value}, at ${cursor}`);
+    return retVal;
+};
+exports.isReadOnlyArray = isReadOnlyArray;
 const isOperator = (character) => {
     const retVal = ((0, exports.isDelimiter)(character) ||
         (0, exports.isAssigmentOperator)(character) ||
@@ -563,6 +575,7 @@ const isSpecialCharacter = (input) => {
     const symbols = [
         '\r\n',
         ...INDIRECTION_SYMBOLS,
+        ...BASE_ADDRESS_SYMBOLS,
         ...DELIMITER_SYMBOLS,
         ...ASSIGMENT_OPERATORS,
         ...MOVE_OPERATORS,
@@ -580,9 +593,11 @@ const isSpecialCharacter = (input) => {
     symbols.sort((a, b) => b.length - a.length);
     for (let symbol of symbols) {
         if (input.toLowerCase().startsWith(symbol.toLowerCase(), cursor)) {
+            log_1.default.write('DEBUG', `returned "${symbol.length}" for character ${symbol}, at ${cursor}`);
             return symbol.length;
         }
     }
+    log_1.default.write('DEBUG', `returned "${0}"}, at ${cursor}`);
     return 0;
 };
 exports.isSpecialCharacter = isSpecialCharacter;

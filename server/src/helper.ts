@@ -120,7 +120,7 @@ export const getCharacter = (input: string): string => {
     return character;
 };
 export const getCharacters = (input: string, numberOfCharacter: number): string => {
-    if (!(getCursor() + numberOfCharacter < input.length)) return "";
+    if (!(getCursor() + numberOfCharacter <= input.length)) return "";
     const characters = input.substring(cursor, cursor + numberOfCharacter);
     log.write('DEBUG', `returned "${characters}", (${characters.length}), at ${cursor}, for ${numberOfCharacter}.`)
     cursor += numberOfCharacter;
@@ -141,7 +141,7 @@ export const getLastType = (arr: Token[]): string => {
         return "";
     }
 }
-export const getLastValue = (arr: Token[]): string => {
+export const getPreviousTokenValue = (arr: Token[]): string => {
     const token = getLastElement(arr);
     log.write('DEBUG', `returned ${token.value}.`)
     if (token) {
@@ -462,6 +462,11 @@ export const isIndirection = (character: string): boolean => {
     log.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
+export const isBaseAddressSymbol = (character: string): boolean => {
+    const retVal = BASE_ADDRESS_SYMBOLS.some(indirection => indirection.toLowerCase() === character.toLowerCase());
+    log.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
+    return retVal;
+};
 export const isGlobalContext = (context: string): boolean => {
     const retVal = (context === "Global");
     log.write('DEBUG', `returned "${retVal}" for character ${context}, at ${cursor}`)
@@ -475,6 +480,11 @@ export const isLocalContext = (context: string): boolean => {
 export const isSubLocalContext = (context: string): boolean => {
     const retVal = (context === "Sublocal");
     log.write('DEBUG', `returned "${retVal}" for character ${context}, at ${cursor}`)
+    return retVal;
+}
+export const isReadOnlyArray = (value: string): boolean => {
+    const retVal = (value === "'P'");
+    log.write('DEBUG', `returned "${retVal}" for character ${value}, at ${cursor}`)
     return retVal;
 }
 
@@ -501,6 +511,7 @@ export const isSpecialCharacter = (input: string): number => {
     const symbols = [
         '\r\n',
         ...INDIRECTION_SYMBOLS,
+        ...BASE_ADDRESS_SYMBOLS,
         ...DELIMITER_SYMBOLS,
         ...ASSIGMENT_OPERATORS,
         ...MOVE_OPERATORS,
@@ -520,9 +531,11 @@ export const isSpecialCharacter = (input: string): number => {
 
     for (let symbol of symbols) {
         if (input.toLowerCase().startsWith(symbol.toLowerCase(), cursor)) {
+            log.write('DEBUG', `returned "${symbol.length}" for character ${symbol}, at ${cursor}`)
             return symbol.length;
         }
     }
+    log.write('DEBUG', `returned "${0}"}, at ${cursor}`)
     return 0;
 }
 
