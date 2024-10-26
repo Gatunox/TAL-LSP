@@ -7,6 +7,7 @@ const tokenize = (input: string) => {
     let tokens: Token[] = [];
     let currentLine = 1;         // Track the current line number
     let currentCharacter = 0;    // Track the current character position within the line
+    let ignoreSpaces = true;     // flag to indicate if spaces should be ignored
 
     helpers.resetCursor();
 
@@ -78,15 +79,15 @@ const tokenize = (input: string) => {
             continue;
         }
 
-        if (helpers.isLetter(helpers.peekCharacter(input))) {
+        if (helpers.isLetter(helpers.peekCharacter(input), ignoreSpaces)) {
             const startChar = currentCharacter;
             let symbol = helpers.getCharacter(input);
             currentCharacter += 1;
             log.write('DEBUG', `isLetter retuned true with symbol = ${symbol}.`)
 
             while (helpers.getCursor() < input.length &&
-                (helpers.isLetter(helpers.peekCharacter(input)) ||
-                    helpers.isNumber(helpers.peekCharacter(input)))) {
+                  (helpers.isLetter(helpers.peekCharacter(input), ignoreSpaces) ||
+                   helpers.isNumber(helpers.peekCharacter(input)))) {
                 symbol += helpers.getCharacter(input);
                 currentCharacter += 1;
             }
@@ -170,7 +171,7 @@ const tokenize = (input: string) => {
                 }
                 if (helpers.isOpeneningComment(symbol)) {
                     log.write('DEBUG', `isOpeneningComment retuned true with number = ${symbol}.`)
-
+                    ignoreSpaces = !ignoreSpaces;
                     tokens.push({
                         type: 'Comment',
                         value: symbol,
@@ -233,6 +234,7 @@ const tokenize = (input: string) => {
                     continue;
                 }
                 if (helpers.isDelimiter(symbol)) {
+                    if (helpers.isQuote(symbol)) ignoreSpaces = !ignoreSpaces;
                     tokens.push({
                         type: 'Delimiter',
                         value: symbol,

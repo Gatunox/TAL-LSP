@@ -175,8 +175,8 @@ export const isNewLine = (text: string): boolean => {
     log.write('DEBUG', `returned "${retVal}" for character ${text}, at ${cursor}`)
     return retVal;
 };
-export const isLetter = (character: string): boolean => {
-    const retVal = LETTER.test(character);
+export const isLetter = (character: string, ignoredSpace: boolean): boolean => {
+    const retVal = ignoredSpace ? LETTER.test(character) : LETTER.test(character) || character === " ";
     log.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`)
     return retVal;
 }

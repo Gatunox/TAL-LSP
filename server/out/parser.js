@@ -1,19 +1,19 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const helpers = require("./helper");
-const log = require("./log");
+const log_1 = require("./log");
 let context = 'Global';
 let index = 0;
 let symbolsCache = new Map();
 // Main Parsing Function
 function parseTokens(tokens) {
-    log.default.write('DEBUG', 'called:');
+    log_1.default.write('DEBUG', 'called:');
     index = 0;
     symbolsCache.clear();
     while (index < tokens.length) {
         if (!tokens[index])
             break;
-        log.default.write('DEBUG', tokens[index]);
+        log_1.default.write('DEBUG', tokens[index]);
         if (tokens[index] && tokens[index].type === 'Comment') {
             parseComment(tokens);
         }
@@ -40,33 +40,33 @@ function parseTokens(tokens) {
     return symbolsCache;
 }
 function parseComment(tokens) {
-    log.default.write('DEBUG', 'called:');
+    log_1.default.write('DEBUG', 'called:');
     index += 1; // Move past the ! comment
     while (tokens[index] && tokens[index].type != 'Comment' && tokens[index].type != 'NewLine') {
-        log.default.write('DEBUG', tokens[index]);
+        log_1.default.write('DEBUG', tokens[index]);
         index += 1; // move to next token; 
     }
     if (tokens[index] && tokens[index].type === 'Comment' && tokens[index].value === '!') {
-        log.default.write('DEBUG', tokens[index]);
+        log_1.default.write('DEBUG', tokens[index]);
         index += 1; // Move past the !
     }
     return index;
 }
 function parseCommentLine(tokens) {
-    log.default.write('DEBUG', 'called:');
+    log_1.default.write('DEBUG', 'called:');
     index += 1; // Move past the ! comment
     while (tokens[index] && tokens[index].type != 'NewLine') {
-        log.default.write('DEBUG', tokens[index]);
+        log_1.default.write('DEBUG', tokens[index]);
         index += 1; // move to next token;
     }
     return index;
 }
 function parseDirectives(tokens) {
-    log.default.write('DEBUG', 'called:');
+    log_1.default.write('DEBUG', 'called:');
     let key = '';
     index += 1; // Move past the ! comment
     while (tokens[index] && tokens[index].type != 'NewLine') {
-        log.default.write('DEBUG', tokens[index]);
+        log_1.default.write('DEBUG', tokens[index]);
         if (tokens[index] && tokens[index].type === 'Comment') {
             parseComment(tokens);
         }
@@ -103,22 +103,22 @@ function parseDirectives(tokens) {
                 startChar: directive.startCharacter,
                 endChar: directive.endCharacter,
             });
-            log.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
+            log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
             index += 1; // Move past the directive
             if (tokens[index].type === 'Delimiter' && tokens[index].value === ',') {
-                log.default.write('DEBUG', tokens[index]);
+                log_1.default.write('DEBUG', tokens[index]);
                 index += 1; // Move past the comma;
             }
         }
     }
     if (tokens[index] && tokens[index].type === 'NewLine' && tokens[index].value === '<CR><LF>') {
-        log.default.write('DEBUG', tokens[index]);
+        log_1.default.write('DEBUG', tokens[index]);
         index += 1; // Move past the newline
     }
     return index;
 }
 function parseKeyword(tokens) {
-    log.default.write('DEBUG', 'called:');
+    log_1.default.write('DEBUG', 'called:');
     if (tokens[index] && helpers.isLiteral(tokens[index].value)) {
         parseLiteral(tokens);
     }
@@ -131,7 +131,7 @@ function parseKeyword(tokens) {
     return index;
 }
 function parseLiteral(tokens) {
-    log.default.write('DEBUG', 'called:');
+    log_1.default.write('DEBUG', 'called:');
     let key = '';
     index += 1; // Move past the LITERAL Keyword   
     while (index < tokens.length) {
@@ -140,20 +140,20 @@ function parseLiteral(tokens) {
         if (tokens[index].value === ';')
             break;
         while (index < tokens.length && tokens[index].type != 'Name') {
-            log.default.write('DEBUG', tokens[index]);
+            log_1.default.write('DEBUG', tokens[index]);
             index += 1; // move to next token; 
         }
         let indent = tokens[index];
         index += 1; // Move passa the Identifier
         if (tokens[index].type === 'Delimiter' && tokens[index].value === '=') {
-            log.default.write('DEBUG', tokens[index]);
+            log_1.default.write('DEBUG', tokens[index]);
             index += 1; // Move past the =;
         }
-        log.default.write('DEBUG', tokens[index]);
+        log_1.default.write('DEBUG', tokens[index]);
         let value = tokens[index].value;
         index += 1; // Move passa constant value
         while (index < tokens.length && tokens[index].value !== ',' && tokens[index].value !== ';') {
-            log.default.write('DEBUG', tokens[index]);
+            log_1.default.write('DEBUG', tokens[index]);
             value += tokens[index].value;
             index += 1;
         }
@@ -169,20 +169,20 @@ function parseLiteral(tokens) {
             startChar: indent.startCharacter,
             endChar: indent.endCharacter,
         });
-        log.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
+        log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
         if (tokens[index] && tokens[index].type === 'Delimiter' && tokens[index].value === ',') {
-            log.default.write('DEBUG', tokens[index]);
+            log_1.default.write('DEBUG', tokens[index]);
             index += 1; // Move past comma, since we do not have to skip the ;
         }
     }
     if (index < tokens.length && tokens[index].type === 'Delimiter' && tokens[index].value === ';') {
-        log.default.write('DEBUG', tokens[index]);
+        log_1.default.write('DEBUG', tokens[index]);
         index += 1; // Move past comma, since we do not have to skip the ;
     }
-    log.default.write('DEBUG', 'finished:');
+    log_1.default.write('DEBUG', 'finished:');
 }
 function parseDefine(tokens) {
-    log.default.write('DEBUG', 'called:');
+    log_1.default.write('DEBUG', 'called:');
     let parentesis = false;
     let key = '';
     index += 1; // Move past the DEFINE Keyword   
@@ -192,7 +192,7 @@ function parseDefine(tokens) {
         if (tokens[index].value === ';')
             break;
         while (index < tokens.length && tokens[index].type != 'Name') {
-            log.default.write('DEBUG', tokens[index]);
+            log_1.default.write('DEBUG', tokens[index]);
             index += 1; // move to next token; 
         }
         let indent = tokens[index];
@@ -208,10 +208,10 @@ function parseDefine(tokens) {
             startChar: indent.startCharacter,
             endChar: indent.endCharacter,
         });
-        log.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
+        log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
         index += 1; // Move passa the Identifier
         while (index < tokens.length && tokens[index].value != '(' && tokens[index].value != '=') {
-            log.default.write('DEBUG', tokens[index]);
+            log_1.default.write('DEBUG', tokens[index]);
             index += 1; // move to next token; 
         }
         // Check if we are starting with the expected opening token
@@ -237,30 +237,30 @@ function parseDefine(tokens) {
                     startChar: parameter.startCharacter,
                     endChar: parameter.endCharacter,
                 });
-                log.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
+                log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
             }
             index += 1;
         }
         while (index < tokens.length && tokens[index].value != '=') {
-            log.default.write('DEBUG', 'looking for =');
-            log.default.write('DEBUG', tokens[index]);
+            log_1.default.write('DEBUG', 'looking for =');
+            log_1.default.write('DEBUG', tokens[index]);
             index += 1; // move to next token; 
         }
         if (tokens[index].type === 'Delimiter' && tokens[index].value === '=') {
-            log.default.write('DEBUG', '= found');
-            log.default.write('DEBUG', tokens[index]);
+            log_1.default.write('DEBUG', '= found');
+            log_1.default.write('DEBUG', tokens[index]);
             index += 1; // Move past the =
         }
-        log.default.write('DEBUG', tokens[index]);
+        log_1.default.write('DEBUG', tokens[index]);
         let definebody = [];
         definebody.push(tokens[index]);
         index += 1; // Move passa constant value
         while (index < tokens.length && tokens[index].value !== '#') {
-            log.default.write('DEBUG', tokens[index]);
+            log_1.default.write('DEBUG', tokens[index]);
             definebody.push(tokens[index]);
             index += 1;
         }
-        log.default.write('DEBUG', tokens[index]);
+        log_1.default.write('DEBUG', tokens[index]);
         symbolsCache.set(key + '.Body', {
             kind: 'Define',
             type: 'Body',
@@ -272,38 +272,38 @@ function parseDefine(tokens) {
             startChar: indent.startCharacter,
             endChar: tokens[index].endCharacter,
         });
-        log.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
+        log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
         index += 1; // Move past the #
         while (index < tokens.length && tokens[index].value != ',' && tokens[index].value != ';') {
-            log.default.write('DEBUG', 'looking for =');
-            log.default.write('DEBUG', tokens[index]);
+            log_1.default.write('DEBUG', 'looking for =');
+            log_1.default.write('DEBUG', tokens[index]);
             index += 1; // move to next token; 
         }
         if (tokens[index].value === ',') {
-            log.default.write('DEBUG', tokens[index]);
+            log_1.default.write('DEBUG', tokens[index]);
             index += 1;
         }
         if (tokens[index].value === ';') {
-            log.default.write('DEBUG', tokens[index]);
+            log_1.default.write('DEBUG', tokens[index]);
             index += 1;
             break;
         }
     }
 }
 function parseDeclarations(tokens) {
-    log.default.write('DEBUG', 'called:');
+    log_1.default.write('DEBUG', 'called:');
     let type = parseDataType(tokens);
-    log.default.write('DEBUG', 'type: ' + type);
+    log_1.default.write('DEBUG', 'type: ' + type);
     let indirection = checkForTypeAt(tokens, index, 'Indirection');
     if (indirection)
-        log.default.write('DEBUG', '=== indirection: ===');
+        log_1.default.write('DEBUG', '=== indirection: ===');
     //parseSimplePointer(tokens);
     else {
         parseVariable(tokens, type);
     }
 }
 function parseVariable(tokens, type) {
-    log.default.write('DEBUG', 'called:');
+    log_1.default.write('DEBUG', 'called:');
     const openbracketoffset = 0;
     const lowerBoundOffet = 1;
     const colonoffset = 2;
@@ -324,7 +324,7 @@ function parseVariable(tokens, type) {
         if (checkForValueAt(tokens, index + openbracketoffset, '[') &&
             checkForValueAt(tokens, index + colonoffset, ':') &&
             checkForValueAt(tokens, index + closebracketoffset, ']')) {
-            log.default.write('DEBUG', '=== isArray: ===');
+            log_1.default.write('DEBUG', '=== isArray: ===');
             lowerBoud = Number(tokens[index + lowerBoundOffet].value);
             upperBound = Number(tokens[index + upperBoundOffet].value);
             index += (closebracketoffset + 1);
@@ -335,14 +335,14 @@ function parseVariable(tokens, type) {
             index += 2; // Skip = and 'P'
         }
         if (!checkForValue(tokens, ";") && !checkForValue(tokens, ':=')) {
-            log.default.write('ERROR', 'parseVariable failed.');
+            log_1.default.write('ERROR', 'parseVariable failed.');
             throw new Error(`Expected ';' or ':=' at line ${tokens[index].line} but found '${tokens[index].value}'`);
         }
         if (tokens[index].value === ':=') {
-            log.default.write('DEBUG', tokens[index]);
+            log_1.default.write('DEBUG', tokens[index]);
             index += 1; // Skip :=
             const expressionResult = parseExpression(tokens, index);
-            log.default.write('DEBUG', JSON.stringify(expressionResult));
+            log_1.default.write('DEBUG', JSON.stringify(expressionResult));
             initialization = expressionResult.AST;
             index = expressionResult.index;
         }
@@ -362,18 +362,14 @@ function parseVariable(tokens, type) {
             startChar: startChar,
             endChar: endChar + 1 // +1 account for , o ;
         });
-        log.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
-        log.default.write('DEBUG', "END");
+        log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
     } while (index < tokens.length && checkForValue(tokens, ',')); // fond a comma, let's continue
-    if (checkForValue(tokens, ";")) {
-        log.default.write('DEBUG', tokens[index]);
-        index += 1;
-    } else {
-        throw new Error(`Expected ']' at line ${tokens[index].line} but found '${tokens[index].value}'`);
+    if (!checkForValue(tokens, ";")) {
+        log_1.default.write('ERROR', tokens[index]); //NO NO NO TODO: see that to do.
     }
 }
 function parseDataType(tokens) {
-    log.default.write('DEBUG', 'called:');
+    log_1.default.write('DEBUG', 'called:');
     let openParenthesis = 1;
     let closeParenthesis = 3;
     if (helpers.isString(tokens[index].value)) {
@@ -394,16 +390,16 @@ function parseDataType(tokens) {
         }
         else {
             if (helpers.isUnsigned(tokens[index].value))
-                log.default.write('ERROR', tokens[index]); //NO NO NO TODO: see that to do.
+                log_1.default.write('ERROR', tokens[index]); //NO NO NO TODO: see that to do.
             index += 1;
             return value;
         }
     }
-    log.default.write('ERROR', tokens[index]); //NO NO NO TODO: see that to do.
+    log_1.default.write('ERROR', tokens[index]); //NO NO NO TODO: see that to do.
     return '';
 }
 function parseExpression(tokens, index) {
-    log.default.write('DEBUG', 'called:');
+    log_1.default.write('DEBUG', 'called:');
     // Detect if the expression is an array literal
     if (tokens[index].value === '[') {
         return parseArrayLiteral(tokens, index);
@@ -429,12 +425,12 @@ function parseExpression(tokens, index) {
     return result;
 }
 function parseArrayLiteral(tokens, index) {
-    log.default.write('DEBUG', 'called:');
+    log_1.default.write('DEBUG', 'called:');
     const elements = [];
     index++; // Skip the '['
     while (tokens[index] && tokens[index].value !== ']') {
         const elementResult = parseExpression(tokens, index);
-        log.default.write('DEBUG', JSON.stringify(elementResult));
+        log_1.default.write('DEBUG', JSON.stringify(elementResult));
         elements.push(elementResult.AST);
         index = elementResult.index;
         // Skip the ',' if there are multiple elements
@@ -459,7 +455,7 @@ function parseArrayLiteral(tokens, index) {
 }
 // Parse a term which includes '*' and '/' with higher precedence.
 function parseTerm(tokens, index) {
-    log.default.write('DEBUG', 'called:');
+    log_1.default.write('DEBUG', 'called:');
     // Start with parsing shifts, which have higher precedence than * and /
     let result = parseShift(tokens, index);
     index = result.index;
@@ -486,7 +482,7 @@ function parseTerm(tokens, index) {
     return result;
 }
 function parseShift(tokens, index) {
-    log.default.write('DEBUG', 'called:');
+    log_1.default.write('DEBUG', 'called:');
     // Parse a unary first (which handles unary minus and other factors)
     let result = parseUnary(tokens, index);
     index = result.index;
@@ -514,7 +510,7 @@ function parseShift(tokens, index) {
 }
 // New function to handle unary operators like '+a' or '-a'.
 function parseUnary(tokens, index) {
-    log.default.write('DEBUG', 'called:');
+    log_1.default.write('DEBUG', 'called:');
     // Check for unary '+' or '-'
     if (tokens[index] && (tokens[index].value === '+' || tokens[index].value === '-')) {
         const operatorToken = tokens[index];
@@ -563,9 +559,9 @@ function parseFunctionCall(tokens, index) {
 }
 // Parse a factor, which could be a number, an identifier, or a nested expression in parentheses.
 function parseFactor(tokens, index) {
-    log.default.write('DEBUG', 'called:');
+    log_1.default.write('DEBUG', 'called:');
     const token = tokens[index];
-    log.default.write('DEBUG', token);
+    log_1.default.write('DEBUG', token);
     if (token.type === 'Number') {
         index++;
         return { AST: { type: 'Constant', value: token.value }, index };
@@ -614,75 +610,75 @@ function parseFactor(tokens, index) {
     throw new Error(`Unexpected token '${token.value}' at line ${token.line}`);
 }
 function getTokenValue(tokens) {
-    log.default.write('DEBUG', 'called:');
+    log_1.default.write('DEBUG', 'called:');
     let retVal = '';
     if (tokens[index] && tokens[index].value) {
         retVal = tokens[index].value;
         index += 1;
     }
     if (!retVal) {
-        log.default.write('ERROR', tokens[index]); //NO NO NO TODO: see that to do.
+        log_1.default.write('ERROR', tokens[index]); //NO NO NO TODO: see that to do.
     }
     return retVal;
 }
 function checkForValue(tokens, value) {
-    log.default.write('DEBUG', 'called:');
+    log_1.default.write('DEBUG', 'called:');
     if (tokens[index] && tokens[index].value === value) {
         return true;
     }
     return false;
 }
 function checkForValueAt(tokens, position, value) {
-    log.default.write('DEBUG', 'called:');
+    log_1.default.write('DEBUG', 'called:');
     if (tokens[index] && tokens[position].value === value) {
         return true;
     }
     return false;
 }
 function checkForType(tokens, type) {
-    log.default.write('DEBUG', 'called:');
+    log_1.default.write('DEBUG', 'called:');
     if (tokens[index] && tokens[index].type === type) {
         return true;
     }
     return false;
 }
 function checkForTypeAt(tokens, position, type) {
-    log.default.write('DEBUG', 'called:');
+    log_1.default.write('DEBUG', 'called:');
     if (tokens[index] && tokens[position].type === type) {
         return true;
     }
     return false;
 }
 function parseIdent(tokens) {
-    log.default.write('DEBUG', 'called:');
+    log_1.default.write('DEBUG', 'called:');
     let retVal = '';
     // If we find name gets it's value
     if (tokens[index].type === 'Name') {
         retVal = tokens[index].value;
-        log.default.write('DEBUG', `Found variable name: ${retVal}`);
+        log_1.default.write('DEBUG', `Found variable name: ${retVal}`);
         index += 1;
         return retVal;
     }
-    log.default.write('ERROR', tokens[index]); //NO NO NO TODO: see that to do.
+    log_1.default.write('ERROR', tokens[index]); //NO NO NO TODO: see that to do.
     return retVal;
 }
 function parseCrossRefDirective(tokens) {
-    log.default.write('DEBUG', tokens[index]);
-    log.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
+    log_1.default.write('DEBUG', tokens[index]);
+    log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
     return index;
 }
 function parseColumnsDirective(tokens) {
-    log.default.write('DEBUG', tokens[index]);
-    log.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
+    log_1.default.write('DEBUG', tokens[index]);
+    log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
     return index;
 }
 function parseAssertionDirective(tokens) {
-    log.default.write('DEBUG', tokens[index]);
-    log.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
+    log_1.default.write('DEBUG', tokens[index]);
+    log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
     return index;
 }
 function parseSimpleDirective(tokens) {
-    log.default.write('DEBUG', tokens[index]);
+    log_1.default.write('DEBUG', tokens[index]);
     let directive = tokens[index];
     let key = context + '.' + directive.value;
     symbolsCache.set(key, {
@@ -698,14 +694,14 @@ function parseSimpleDirective(tokens) {
     });
     index += 1; // Move to ABORT or NOABORT VALUE
     if (tokens[index].type === 'Delimiter' && tokens[index].value === ',') {
-        log.default.write('DEBUG', tokens[index]);
+        log_1.default.write('DEBUG', tokens[index]);
         index += 1; // Move past the comma;
     }
-    log.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
+    log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
     return index;
 }
 function parseTargetDirective(tokens) {
-    log.default.write('DEBUG', tokens[index]);
+    log_1.default.write('DEBUG', tokens[index]);
     let target = tokens[index];
     index += 1; // Move to TARGET KEYWORD
     let value = tokens[index];
@@ -722,7 +718,7 @@ function parseTargetDirective(tokens) {
         endChar: target.endCharacter,
     });
     index += 1; // Move to TARGET VALUE
-    log.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
+    log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
     return index;
 }
 function parseSourceDirective(tokens) {
@@ -730,13 +726,13 @@ function parseSourceDirective(tokens) {
     let key = '';
     index += 1; // Move past the SOURCE KEYWORD
     while (tokens[index] && !(tokens[index].type === 'Delimiter' && tokens[index].value === '(')) {
-        log.default.write('DEBUG', tokens[index]);
+        log_1.default.write('DEBUG', tokens[index]);
         source += tokens[index].value;
         index += 1; // Move to next token
     }
     index += 1; // Move past the open parentesis
     while (tokens[index] && !(tokens[index].type === 'Delimiter' && tokens[index].value === ')')) {
-        log.default.write('DEBUG', tokens[index]);
+        log_1.default.write('DEBUG', tokens[index]);
         if (tokens[index].value === "," ||
             tokens[index].value === "?" ||
             tokens[index].value === "<CR><LF>")
@@ -755,18 +751,18 @@ function parseSourceDirective(tokens) {
                 startChar: func.startCharacter,
                 endChar: func.endCharacter,
             });
-            log.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
+            log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
             index += 1; // Move past the directive
         }
     }
     if (tokens[index] && tokens[index].type === 'Delimiter' && tokens[index].value === ')') {
-        log.default.write('DEBUG', tokens[index]);
+        log_1.default.write('DEBUG', tokens[index]);
         index += 1; // Move past the )
     }
     return index;
 }
 function skipNewlines(tokens, index) {
-    log.default.write('DEBUG', 'called:');
+    log_1.default.write('DEBUG', 'called:');
     while (index < tokens.length && tokens[index].type === 'NewLine') {
         index += 1; // Move past the comma;
     }

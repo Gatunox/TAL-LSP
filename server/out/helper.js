@@ -191,8 +191,8 @@ const isNewLine = (text) => {
     return retVal;
 };
 exports.isNewLine = isNewLine;
-const isLetter = (character) => {
-    const retVal = LETTER.test(character);
+const isLetter = (character, ignoredSpace) => {
+    const retVal = ignoredSpace ? LETTER.test(character) : LETTER.test(character) || character === " ";
     log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
