@@ -342,6 +342,11 @@ export const isQuote = (character: string): boolean => {
     log.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`)
     return retVal;
 }
+export const isNotQuote = (character: string): boolean => {
+    const retVal = (character !== '"');
+    log.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`)
+    return retVal;
+}
 export const isKeyword = (word: string): boolean => {
     const retVal = KEYWORDS.some(keyword => keyword.toLowerCase() === word.toLowerCase());
     log.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`)

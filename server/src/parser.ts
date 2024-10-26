@@ -201,7 +201,7 @@ function parseLiteral(tokens: Token[]) {
         if (!tokens[index]) break;
         if (tokens[index].value === ';') break;
 
-        while (index < tokens.length && tokens[index].type != 'Name') {
+        while (index < tokens.length && tokens[index].type != 'Identifier') {
             log.write('DEBUG', tokens[index]);
             index += 1;  // move to next token; 
         }
@@ -257,7 +257,7 @@ function parseDefine(tokens: Token[]) {
         if (!tokens[index]) break;
         if (tokens[index].value === ';') break;
 
-        while (index < tokens.length && tokens[index].type != 'Name') {
+        while (index < tokens.length && tokens[index].type != 'Identifier') {
             log.write('DEBUG', tokens[index]);
             index += 1;  // move to next token; 
         }
@@ -700,58 +700,34 @@ function parseFunctionCall(tokens: Token[], index: number): { AST: ASTNode, inde
 
 // Parse a factor, which could be a number, an identifier, or a nested expression in parentheses.
 function parseFactor(tokens: Token[], index: number): { AST: ASTNode, index: number } {
-    log.write('DEBUG', 'called:');
-
     const token = tokens[index];
-    log.write('DEBUG', token);
 
+    // Check if the token is a recognized constant or identifier
     if (token.type === 'Number') {
         index++;
         return { AST: { type: 'Constant', value: token.value }, index };
     }
 
-    // Handle identifiers or function calls
-    if (token.type === 'Name') {
-        if (tokens[index + 1] && tokens[index + 1].value === '(') {
-            return parseFunctionCall(tokens, index);
-        } else {
-            index++;
-            return { AST: { type: 'Identifier', value: token.value }, index };
-        }
+    if (token.type === 'String') { // Now handles strings as single tokens
+        index++;
+        return { AST: { type: 'Constant', value: token.value }, index };
     }
 
-    if (token.value === '"') {
-        let stringValue = '';
-        index++; // Skip the opening quote
-
-        // Loop until we find the closing quote or run out of tokens
-        while (index < tokens.length && tokens[index].value !== '"') {
-            stringValue += tokens[index].value;
-            index++;
-        }
-
-        // Check if we have a closing quote
-        if (index < tokens.length && tokens[index].value === '"') {
-            index++; // Skip the closing quote
-            return {
-                AST: { type: 'Constant', value: stringValue },
-                index
-            };
-        } else {
-            throw new Error(`Unterminated string literal at line ${token.line}`);
-        }
+    if (token.type === 'Identifier') {
+        index++;
+        return { AST: { type: 'Identifier', value: token.value }, index };
     }
 
-    // Handle parentheses by parsing a sub-expression.
+    // Handle nested expressions in parentheses
     if (token.value === '(') {
-        index++; // Skip '('
+        index++; // Skip the '('
         const expressionResult = parseExpression(tokens, index);
         index = expressionResult.index;
 
         if (tokens[index].value !== ')') {
-            throw new Error(`Expected ')' at line ${tokens[index].line} but found '${tokens[index].value}'`);
+            throw new Error(`Expected ')' at line ${tokens[index].line}`);
         }
-        index++; // Skip ')'
+        index++; // Skip the ')'
         return { AST: expressionResult.AST, index };
     }
 
@@ -816,7 +792,7 @@ function parseIdent(tokens: Token[]): string {
     let retVal = '';
 
     // If we find name gets it's value
-    if (tokens[index].type === 'Name') {
+    if (tokens[index].type === 'Identifier') {
         retVal = tokens[index].value;
         log.write('DEBUG', `Found variable name: ${retVal}`);
         index += 1;

@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isDataType = exports.isFixed = exports.isUnsigned = exports.isReal = exports.isInt = exports.isString = exports.isLiteral = exports.isDefine = exports.isKeyword = exports.isQuote = exports.isParenthesis = exports.isSquareBrackets = exports.isAngleBrackets = exports.isComment = exports.isClosingBit = exports.isOpeneningBit = exports.isClosingIndex = exports.isOpeneningIndex = exports.isClosingParenthesis = exports.isOpeneningParenthesis = exports.isSingleLineComment = exports.isClosingComment = exports.isOpeneningComment = exports.isStandarFucntions = exports.isSimpleCompilerDirective = exports.isCompilerDirective = exports.isCompilerDirectiveLine = exports.isNumber = exports.isDot = exports.isHexadecimalNumber = exports.isBinaryNumber = exports.isOctalNumber = exports.isDecimalNumber = exports.isNumericSuffix = exports.isNumericBase = exports.isWhitespace = exports.isLetter = exports.isNewLine = exports.peekCharacters = exports.peekCharacterAt = exports.peekCharacter = exports.getPreviousTokenValue = exports.getLastType = exports.getLastElement = exports.getCharacters = exports.getCharacter = exports.skipCharacters = exports.moveCursor = exports.resetCursor = exports.getCursor = void 0;
-exports.isSpecialCharacter = exports.isOperator = exports.isReadOnlyArray = exports.isSubLocalContext = exports.isLocalContext = exports.isGlobalContext = exports.isBaseAddressSymbol = exports.isIndirection = exports.isBooleanExpresionOperator = exports.isRelationalExpresionOperator = exports.isArithmeticExpresionOperator = exports.isBitShilfOperator = exports.isBitFieldOperator = exports.isDereferencingOperator = exports.isFixedParamTypeOperator = exports.isTemplateStructureOperator = exports.isRepetitionOperator = exports.isRemoveIndirectionOperator = exports.isLabelCaseOperator = exports.isMoveOperator = exports.isAssigmentOperator = exports.isDelimiter = void 0;
+exports.isFixed = exports.isUnsigned = exports.isReal = exports.isInt = exports.isString = exports.isLiteral = exports.isDefine = exports.isKeyword = exports.isNotQuote = exports.isQuote = exports.isParenthesis = exports.isSquareBrackets = exports.isAngleBrackets = exports.isComment = exports.isClosingBit = exports.isOpeneningBit = exports.isClosingIndex = exports.isOpeneningIndex = exports.isClosingParenthesis = exports.isOpeneningParenthesis = exports.isSingleLineComment = exports.isClosingComment = exports.isOpeneningComment = exports.isStandarFucntions = exports.isSimpleCompilerDirective = exports.isCompilerDirective = exports.isCompilerDirectiveLine = exports.isNumber = exports.isDot = exports.isHexadecimalNumber = exports.isBinaryNumber = exports.isOctalNumber = exports.isDecimalNumber = exports.isNumericSuffix = exports.isNumericBase = exports.isWhitespace = exports.isLetter = exports.isNewLine = exports.peekCharacters = exports.peekCharacterAt = exports.peekCharacter = exports.getPreviousTokenValue = exports.getLastType = exports.getLastElement = exports.getCharacters = exports.getCharacter = exports.skipCharacters = exports.moveCursor = exports.resetCursor = exports.getCursor = void 0;
+exports.isSpecialCharacter = exports.isOperator = exports.isReadOnlyArray = exports.isSubLocalContext = exports.isLocalContext = exports.isGlobalContext = exports.isBaseAddressSymbol = exports.isIndirection = exports.isBooleanExpresionOperator = exports.isRelationalExpresionOperator = exports.isArithmeticExpresionOperator = exports.isBitShilfOperator = exports.isBitFieldOperator = exports.isDereferencingOperator = exports.isFixedParamTypeOperator = exports.isTemplateStructureOperator = exports.isRepetitionOperator = exports.isRemoveIndirectionOperator = exports.isLabelCaseOperator = exports.isMoveOperator = exports.isAssigmentOperator = exports.isDelimiter = exports.isDataType = void 0;
 const log_1 = require("./log");
 const LETTER = /[a-zA-Z_^]/;
 const WHITESPACE = /[ \t]+/; // Matches spaces and tabs
@@ -378,6 +378,12 @@ const isQuote = (character) => {
     return retVal;
 };
 exports.isQuote = isQuote;
+const isNotQuote = (character) => {
+    const retVal = (character !== '"');
+    log_1.default.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
+    return retVal;
+};
+exports.isNotQuote = isNotQuote;
 const isKeyword = (word) => {
     const retVal = KEYWORDS.some(keyword => keyword.toLowerCase() === word.toLowerCase());
     log_1.default.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`);
