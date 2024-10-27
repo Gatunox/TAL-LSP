@@ -339,7 +339,7 @@ function parseVariable(tokens, type) {
         if (tokens[index].value === ':=') {
             log_1.default.write('DEBUG', tokens[index]);
             index += 1; // Skip :=
-            const expressionResult = parseExpression(tokens, index);
+            const expressionResult = parseArithmeticExpression(tokens, index);
             log_1.default.write('DEBUG', JSON.stringify(expressionResult));
             initialization = expressionResult.AST;
             index = expressionResult.index;
@@ -393,7 +393,7 @@ function parseArray(tokens, type) {
         if (tokens[index].value === ':=') {
             log_1.default.write('DEBUG', tokens[index]);
             index++;
-            const expressionResult = parseExpression(tokens, index);
+            const expressionResult = parseConstantListExpression(tokens, index);
             initialization = expressionResult.AST;
             index = expressionResult.index;
         }
@@ -419,6 +419,86 @@ function parseArray(tokens, type) {
     if (!checkForValue(tokens, ";")) {
         log_1.default.write('ERROR', tokens[index]); // Expected ';' at end
     }
+}
+function parseConstantListExpression(tokens, index) {
+    const elementsStack = [[]];
+    let currentElements = elementsStack[0];
+    while (index < tokens.length && tokens[index].value !== ';') {
+        const token = tokens[index];
+        if (token.value === '[') {
+            // Start a new nested array without adding a `ConstantArray`
+            const newElements = [];
+            elementsStack.push(newElements);
+            currentElements = newElements;
+            index++;
+        }
+        else if (token.value === ']') {
+            // Complete the current nested list and push directly to the parent without a `ConstantArray`
+            const completedElements = elementsStack.pop();
+            currentElements = elementsStack[elementsStack.length - 1];
+            currentElements.push(...completedElements); // Spread elements directly into parent list
+            index++;
+        }
+        else if (isRepetitionPattern(tokens, index)) {
+            // Handle repetition constants, e.g., "10 * [ ... ]"
+            const { repetitionNode, newIndex } = parseRepetition(tokens, index);
+            currentElements.push(repetitionNode);
+            index = newIndex;
+        }
+        else {
+            // Parse individual constants
+            const { constantNode, newIndex } = parseConstant(tokens, index);
+            currentElements.push(constantNode);
+            index = newIndex;
+            index = skipCommaAndNewlines(tokens, index);
+        }
+    }
+    // Wrap only the mainElements at the top level in `ConstantArray`
+    return {
+        AST: { type: 'ConstantArray', elements: elementsStack[0] },
+        index
+    };
+}
+// Helper: Check if the pattern matches a repetition constant, e.g., "10 * [ ... ]"
+function isRepetitionPattern(tokens, index) {
+    return tokens[index].type === 'Number' && tokens[index + 1]?.value === '*';
+}
+// Helper: Parse a repetition constant, e.g., "10 * [ ... ]"
+function parseRepetition(tokens, index) {
+    const repetitionFactor = parseInt(tokens[index].value, 10);
+    index += 2; // Skip the repetition factor and '*'
+    if (tokens[index]?.value === '[') {
+        const nestedList = parseConstantListExpression(tokens, index + 1);
+        return {
+            repetitionNode: {
+                type: 'RepetitionConstantArray',
+                repetitionFactor,
+                sequence: nestedList.AST
+            },
+            newIndex: nestedList.index + 1 // Move past ']'
+        };
+    }
+    else {
+        throw new Error(`Expected '[' after repetition factor at index ${index}`);
+    }
+}
+// Helper: Parse an individual constant (Number, Literal, or String)
+function parseConstant(tokens, index) {
+    const token = tokens[index];
+    if (token.type === 'Number' || token.type === 'Literal' || token.type === 'String') {
+        return {
+            constantNode: { type: 'Constant', value: token.value },
+            newIndex: index + 1
+        };
+    }
+    throw new Error(`Expected constant at index ${index}, found '${token.value}'`);
+}
+// Helper: Skip commas and newlines between elements
+function skipCommaAndNewlines(tokens, index) {
+    if (tokens[index]?.value === ',') {
+        index++;
+    }
+    return skipNewlines(tokens, index);
 }
 function skipComma(tokens, index) {
     log_1.default.write('DEBUG', 'called:');
@@ -467,7 +547,7 @@ function parseDataType(tokens) {
     log_1.default.write('ERROR', tokens[index]); //NO NO NO TODO: see that to do.
     return '';
 }
-function parseExpression(tokens, index, precedence = 0) {
+function parseArithmeticExpression(tokens, index, precedence = 0) {
     // Parse the left side of the expression, starting with unary or primary
     let result = precedence === 0 ? parseUnary(tokens, index) : parsePrimary(tokens, index);
     index = result.index;
@@ -477,7 +557,7 @@ function parseExpression(tokens, index, precedence = 0) {
         const operatorPrecedence = getPrecedence(tokens[index]);
         index++;
         // Recursively parse the right operand at the next higher precedence level
-        const right = parseExpression(tokens, index, operatorPrecedence + 1);
+        const right = parseArithmeticExpression(tokens, index, operatorPrecedence + 1);
         index = right.index;
         // Construct the BinaryExpression node with left and right operands
         result = {
@@ -532,7 +612,7 @@ function parsePrimary(tokens, index) {
     }
     if (token.value === '(') {
         index++;
-        const expressionResult = parseExpression(tokens, index, 9);
+        const expressionResult = parseArithmeticExpression(tokens, index, 9);
         index = expressionResult.index;
         if (tokens[index].value !== ')') {
             throw new Error(`Expected ')' at index ${index}`);
@@ -552,7 +632,7 @@ function parseFunctionCall(tokens, index) {
     const argumentsList = [];
     // Parse each argument
     while (tokens[index].value !== ')') {
-        const argumentResult = parseExpression(tokens, index, 9); // Parse each argument as an expression
+        const argumentResult = parseArithmeticExpression(tokens, index, 9); // Parse each argument as an expression
         argumentsList.push(argumentResult.AST);
         index = argumentResult.index;
         // If there's a comma, skip it to continue to the next argument

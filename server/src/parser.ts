@@ -28,6 +28,7 @@ export type SymbolEntry = {
 export type ASTNode =
     | { type: 'Constant'; value: string }
     | { type: 'ConstantArray'; elements: ASTNode[] }
+    | { type: 'RepetitionConstantArray'; repetitionFactor: number, sequence: ASTNode }
     | { type: 'Identifier'; name: string }
     | { type: 'UnaryExpression'; operator: string; argument: ASTNode }
     | { type: 'BinaryExpression'; operator: string; left: ASTNode; right: ASTNode }
@@ -505,6 +506,93 @@ function parseArray(tokens: Token[], type: string) {
         log.write('ERROR', tokens[index]); // Expected ';' at end
     }
 }
+
+
+function parseConstantListExpression(tokens: Token[], index: number): { AST: ASTNode, index: number } {
+    const elementsStack: ASTNode[][] = [[]];
+    let currentElements = elementsStack[0];
+
+    while (index < tokens.length && tokens[index].value !== ';') {
+        const token = tokens[index];
+
+        if (token.value === '[') {
+            // Start a new nested array without adding a `ConstantArray`
+            const newElements: ASTNode[] = [];
+            elementsStack.push(newElements);
+            currentElements = newElements;
+            index++;
+        } else if (token.value === ']') {
+            // Complete the current nested list and push directly to the parent without a `ConstantArray`
+            const completedElements = elementsStack.pop()!;
+            currentElements = elementsStack[elementsStack.length - 1];
+            currentElements.push(...completedElements); // Spread elements directly into parent list
+            index++;
+        } else if (isRepetitionPattern(tokens, index)) {
+            // Handle repetition constants, e.g., "10 * [ ... ]"
+            const { repetitionNode, newIndex } = parseRepetition(tokens, index);
+            currentElements.push(repetitionNode);
+            index = newIndex;
+        } else {
+            // Parse individual constants
+            const { constantNode, newIndex } = parseConstant(tokens, index);
+            currentElements.push(constantNode);
+            index = newIndex;
+            index = skipCommaAndNewlines(tokens, index);
+        }
+    }
+
+    // Wrap only the mainElements at the top level in `ConstantArray`
+    return {
+        AST: { type: 'ConstantArray', elements:  elementsStack[0] },
+        index
+    };
+}
+
+// Helper: Check if the pattern matches a repetition constant, e.g., "10 * [ ... ]"
+function isRepetitionPattern(tokens: Token[], index: number): boolean {
+    return tokens[index].type === 'Number' && tokens[index + 1]?.value === '*';
+}
+
+// Helper: Parse a repetition constant, e.g., "10 * [ ... ]"
+function parseRepetition(tokens: Token[], index: number): { repetitionNode: ASTNode, newIndex: number } {
+    const repetitionFactor = parseInt(tokens[index].value, 10);
+    index += 2; // Skip the repetition factor and '*'
+
+    if (tokens[index]?.value === '[') {
+        const nestedList = parseConstantListExpression(tokens, index + 1);
+        return {
+            repetitionNode: {
+                type: 'RepetitionConstantArray',
+                repetitionFactor,
+                sequence: nestedList.AST
+            },
+            newIndex: nestedList.index + 1 // Move past ']'
+        };
+    } else {
+        throw new Error(`Expected '[' after repetition factor at index ${index}`);
+    }
+}
+
+// Helper: Parse an individual constant (Number, Literal, or String)
+function parseConstant(tokens: Token[], index: number): { constantNode: ASTNode, newIndex: number } {
+    const token = tokens[index];
+    if (token.type === 'Number' || token.type === 'Literal' || token.type === 'String') {
+        return {
+            constantNode: { type: 'Constant', value: token.value },
+            newIndex: index + 1
+        };
+    }
+    throw new Error(`Expected constant at index ${index}, found '${token.value}'`);
+}
+
+// Helper: Skip commas and newlines between elements
+function skipCommaAndNewlines(tokens: Token[], index: number): number {
+    if (tokens[index]?.value === ',') {
+        index++;
+    }
+    return skipNewlines(tokens, index);
+}
+
 
 function skipComma(tokens: Token[], index: number): number {
     log.write('DEBUG', 'called:');
