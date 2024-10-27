@@ -367,6 +367,11 @@ export const isString = (word: string): boolean => {
     log.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`)
     return retVal;
 }
+export const isStruct = (word: string): boolean => {
+    const retVal = 'STRUCT' === word.toUpperCase();
+    log.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`)
+    return retVal;
+}
 export const isInt = (word: string): boolean => {
     const retVal = 'INT' === word.toUpperCase();
     log.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`)
