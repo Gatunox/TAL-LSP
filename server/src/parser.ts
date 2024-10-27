@@ -1,3 +1,4 @@
+import assert = require('assert');
 import * as helpers from './helper';
 import { Token } from './helper';
 import log from './log';
@@ -25,46 +26,14 @@ export type SymbolEntry = {
 }
 
 export type ASTNode =
-    ConstantArrayNode |
-    ConstantNode |
-    IdentifierNode |
-    UnaryExpressionNode |
-    FunctionCallNode |
-    BinaryExpressionNode;
+    | { type: 'Constant'; value: string }
+    | { type: 'ConstantArray'; elements: ASTNode[] }
+    | { type: 'Identifier'; name: string }
+    | { type: 'UnaryExpression'; operator: string; argument: ASTNode }
+    | { type: 'BinaryExpression'; operator: string; left: ASTNode; right: ASTNode }
+    | { type: 'AssignmentExpression'; operator: string; left: ASTNode; right: ASTNode }
+    | { type: 'FunctionCall'; name: string; arguments: ASTNode[] };
 
-export interface ConstantArrayNode {
-    type: 'ConstantArray';
-    elements: ASTNode[];
-}
-
-export interface ConstantNode {
-    type: 'Constant';
-    value: string;
-}
-
-export interface IdentifierNode {
-    type: 'Identifier';
-    value: string;
-}
-
-export interface UnaryExpressionNode {
-    type: 'UnaryExpression';
-    operator: string; // e.g., '+' or '-'
-    argument: ASTNode;
-}
-
-export interface FunctionCallNode {
-    type: 'FunctionCall';
-    name: string; // e.g., 'foo'
-    arguments: ASTNode[];
-}
-
-export interface BinaryExpressionNode {
-    type: 'BinaryExpression';
-    operator: string; // e.g., '+', '-', '*', '/'
-    left: ASTNode;
-    right: ASTNode;
-}
 
 let context: string = 'Global';
 let index: number = 0;
@@ -418,9 +387,7 @@ function parseVariable(tokens: Token[], type: string) {
     let upperBound = 0;
     let initialization = null;
     do {
-        if (checkForValue(tokens, ",")) {
-            index += 1; // Skip , in case of multiples varibles
-        }
+        index = skipComma(tokens, index); // Skip comma for multiple variables
 
         const ident = parseIdent(tokens);
 
@@ -433,7 +400,7 @@ function parseVariable(tokens: Token[], type: string) {
             log.write('DEBUG', tokens[index]);
             index += 1; // Skip :=
 
-            const expressionResult = parseExpression(tokens, index);
+            const expressionResult = parseArithmeticExpression(tokens, index);
             log.write('DEBUG', JSON.stringify(expressionResult));
 
             initialization = expressionResult.AST;
@@ -485,7 +452,7 @@ function parseArray(tokens: Token[], type: string) {
 
         const isIndirection = checkForTypeAt(tokens, index, 'Indirection');
         const IOFFSET = isIndirection ? 1 : 0;
-        
+
         const hasBounds = checkBounds(tokens, index + IOFFSET);
         const BOFFSET = hasBounds ? 5 : 0;
 
@@ -505,7 +472,7 @@ function parseArray(tokens: Token[], type: string) {
         if (tokens[index].value === ':=') {
             log.write('DEBUG', tokens[index]);
             index++;
-            const expressionResult = parseExpression(tokens, index);
+            const expressionResult = parseConstantListExpression(tokens, index);
             initialization = expressionResult.AST;
             index = expressionResult.index;
         }
@@ -529,7 +496,7 @@ function parseArray(tokens: Token[], type: string) {
             startChar,
             endChar: endChar + 1  // +1 to account for ',' or ';'
         });
-        
+
         log.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
 
     } while (index < tokens.length && checkForValue(tokens, ','));
@@ -541,7 +508,7 @@ function parseArray(tokens: Token[], type: string) {
 
 function skipComma(tokens: Token[], index: number): number {
     log.write('DEBUG', 'called:');
-    
+
     if (checkForValue(tokens, ",")) index++; // Skip comma if present
     return index;
 }
@@ -604,235 +571,153 @@ function parseDataType(tokens: Token[]): string {
 }
 
 
-function parseExpression(tokens: Token[], index: number): { AST: ASTNode, index: number } {
-    log.write('DEBUG', 'called:');
-
-    // Detect if the expression is an array literal
-    if (tokens[index].value === '[') {
-        return parseArrayLiteral(tokens, index);
-    }
-
-    let result = parseTerm(tokens, index);
+function parseArithmeticExpression(tokens: Token[], index: number, precedence = 0): { AST: ASTNode, index: number } {
+    // Parse the left side of the expression, starting with unary or primary
+    let result = precedence === 0 ? parseUnary(tokens, index) : parsePrimary(tokens, index);
     index = result.index;
 
-    // Handle '+' and '-' as binary operators
-    while (tokens[index] && (tokens[index].value === '+' || tokens[index].value === '-')) {
-        const operatorToken = tokens[index];
+    // Process operators based on the current precedence level
+    while (tokens[index] && getPrecedence(tokens[index]) >= precedence) {
+        const operator = tokens[index].value;
+        const operatorPrecedence = getPrecedence(tokens[index]);
+
         index++;
 
-        const rightResult = parseTerm(tokens, index);
-        index = rightResult.index;
-
-        result = {
-            AST: {
-                type: 'BinaryExpression',
-                operator: operatorToken.value,
-                left: result.AST,
-                right: rightResult.AST,
-            },
-            index,
-        };
-    }
-
-    return result;
-}
-
-function parseArrayLiteral(tokens: Token[], index: number): { AST: ASTNode, index: number } {
-    log.write('DEBUG', 'called:');
-
-    const elements: ASTNode[] = [];
-    index++; // Skip the '['
-
-    while (tokens[index] && tokens[index].value !== ']') {
-        const elementResult = parseExpression(tokens, index);
-        log.write('DEBUG', JSON.stringify(elementResult));
-        elements.push(elementResult.AST);
-        index = elementResult.index;
-
-        // Skip the ',' if there are multiple elements
-        if (tokens[index] && tokens[index].value === ',') {
-            index++;
-            index = skipNewlines(tokens, index); // Skip any newlines after the ','
-        }
-    }
-
-    if (tokens[index] && tokens[index].value === ']') {
-        index++; // Skip the ']'
-    } else {
-        throw new Error(`Expected ']' at line ${tokens[index].line} but found '${tokens[index].value}'`);
-    }
-
-    return {
-        AST: {
-            type: 'ConstantArray',
-            elements: elements
-        },
-        index,
-    };
-}
-
-// Parse a term which includes '*' and '/' with higher precedence.
-function parseTerm(tokens: Token[], index: number): { AST: ASTNode, index: number } {
-    log.write('DEBUG', 'called:');
-
-    // Start with parsing shifts, which have higher precedence than * and /
-    let result = parseShift(tokens, index);
-    index = result.index;
-
-    // Handle '*' and '/' as binary operators
-    while (tokens[index] &&
-        (tokens[index].value === '*' ||
-            tokens[index].value === '/' ||
-            tokens[index].value === "'*'" ||
-            tokens[index].value === "'/'")) {
-        const operatorToken = tokens[index];
-        index++;
-
-        const rightResult = parseUnary(tokens, index);
-        index = rightResult.index;
-
-        result = {
-            AST: {
-                type: 'BinaryExpression',
-                operator: operatorToken.value,
-                left: result.AST,
-                right: rightResult.AST,
-            },
-            index,
-        };
-    }
-
-    return result;
-}
-
-function parseShift(tokens: Token[], index: number): { AST: ASTNode, index: number } {
-    log.write('DEBUG', 'called:');
-    // Parse a unary first (which handles unary minus and other factors)
-    let result = parseUnary(tokens, index);
-    index = result.index;
-
-    // Loop to handle multiple '<<' operators
-    while (tokens[index] &&
-        (tokens[index].value === '<<' ||
-            tokens[index].value === '>>')) {
-        const operatorToken = tokens[index];
-        index++;  // Move past '<<'
-
-        // Parse the right-hand side of the shift
-        const right = parseUnary(tokens, index);
+        // Recursively parse the right operand at the next higher precedence level
+        const right = parseArithmeticExpression(tokens, index, operatorPrecedence + 1);
         index = right.index;
 
-        // Create a BinaryExpression node for the shift
+        // Construct the BinaryExpression node with left and right operands
         result = {
             AST: {
                 type: 'BinaryExpression',
-                operator: operatorToken.value,
+                operator,
                 left: result.AST,
                 right: right.AST,
             },
-            index
+            index,
         };
     }
 
     return result;
 }
 
-// New function to handle unary operators like '+a' or '-a'.
+
+// New function to handle unary operators like '+a' or '-a'
 function parseUnary(tokens: Token[], index: number): { AST: ASTNode, index: number } {
-    log.write('DEBUG', 'called:');
+    const token = tokens[index];
 
     // Check for unary '+' or '-'
-    if (tokens[index] && (tokens[index].value === '+' || tokens[index].value === '-')) {
-        const operatorToken = tokens[index];
+    if (token.value === '+' || token.value === '-') {
+        const operator = token.value;
         index++;
 
-        const rightResult = parseUnary(tokens, index);
+        const rightResult = parseUnary(tokens, index); // Recursive call to handle further unary expressions
         index = rightResult.index;
 
         return {
             AST: {
                 type: 'UnaryExpression',
-                operator: operatorToken.value,
+                operator,
                 argument: rightResult.AST,
             },
             index,
         };
     }
 
-    // Otherwise, parse as a factor (number, identifier, or parentheses)
-    return parseFactor(tokens, index);
+    // Otherwise, parse as a primary expression
+    return parsePrimary(tokens, index);
 }
 
-// Parse function calls like foo(var1 + var2)
-function parseFunctionCall(tokens: Token[], index: number): { AST: ASTNode, index: number } {
-    const functionName = tokens[index].value;
-    index++; // Move past function name
 
-    if (tokens[index].value !== '(') {
-        throw new Error(`Expected '(' after function name at line ${tokens[index].line}`);
-    }
-    index++; // Skip the '('
-
-    const argumentNodes: ASTNode[] = [];
-
-    while (tokens[index].value !== ')') {
-        const argumentResult = parseExpression(tokens, index);
-        argumentNodes.push(argumentResult.AST);
-        index = argumentResult.index;
-
-        if (tokens[index].value === ',') {
-            index++; // Skip ',' if multiple arguments
-            index = skipNewlines(tokens, index); // Skip any newlines after the ','
-        }
-    }
-
-    index++; // Skip the ')'
-
-    return {
-        AST: {
-            type: 'FunctionCall',
-            name: functionName,
-            arguments: argumentNodes
-        },
-        index
-    };
-}
-
-// Parse a factor, which could be a number, an identifier, or a nested expression in parentheses.
-function parseFactor(tokens: Token[], index: number): { AST: ASTNode, index: number } {
+function parsePrimary(tokens: Token[], index: number): { AST: ASTNode, index: number } {
     const token = tokens[index];
 
-    // Check if the token is a recognized constant or identifier
-    if (token.type === 'Number') {
-        index++;
-        return { AST: { type: 'Constant', value: token.value }, index };
-    }
+    // Treat `;` as the end of an expression and return the current AST
+    //if (token.value === ';') {
+    //    return { AST: { type: 'EndOfExpression' }, index };
+    //}
 
-    if (token.type === 'String') { // Now handles strings as single tokens
+    if (token.type === 'Number' || token.type === 'Literal') {
         index++;
         return { AST: { type: 'Constant', value: token.value }, index };
     }
 
     if (token.type === 'Identifier') {
         index++;
-        return { AST: { type: 'Identifier', value: token.value }, index };
+        return { AST: { type: 'Identifier', name: token.value }, index };
     }
 
-    // Handle nested expressions in parentheses
-    if (token.value === '(') {
-        index++; // Skip the '('
-        const expressionResult = parseExpression(tokens, index);
-        index = expressionResult.index;
+    if (token.type === 'Function') {
+        return parseFunctionCall(tokens, index);
+    }
 
+    if (token.value === '(') {
+        index++;
+        const expressionResult = parseArithmeticExpression(tokens, index, 9);
+        index = expressionResult.index;
         if (tokens[index].value !== ')') {
-            throw new Error(`Expected ')' at line ${tokens[index].line}`);
+            throw new Error(`Expected ')' at index ${index}`);
         }
-        index++; // Skip the ')'
+        index++;
         return { AST: expressionResult.AST, index };
     }
 
-    throw new Error(`Unexpected token '${token.value}' at line ${token.line}`);
+    throw new Error(`Unexpected token '${token.value}' at index ${index}`);
 }
+
+function parseFunctionCall(tokens: Token[], index: number): { AST: ASTNode, index: number } {
+    const functionName = tokens[index].value; // Assume function name token
+    index++; // Move past function name
+
+    if (tokens[index].value !== '(') {
+        throw new Error(`Expected '(' after function name at line ${tokens[index].line}`);
+    }
+    index++; // Skip '('
+
+    const argumentsList: ASTNode[] = [];
+
+    // Parse each argument
+    while (tokens[index].value !== ')') {
+        const argumentResult = parseArithmeticExpression(tokens, index, 9); // Parse each argument as an expression
+        argumentsList.push(argumentResult.AST);
+        index = argumentResult.index;
+
+        // If there's a comma, skip it to continue to the next argument
+        if (tokens[index].value === ',') {
+            index++; // Skip ','
+        }
+    }
+
+    if (tokens[index].value !== ')') {
+        throw new Error(`Expected ')' after function arguments at line ${tokens[index].line}`);
+    }
+    index++; // Skip ')'
+
+    return {
+        AST: {
+            type: 'FunctionCall',
+            name: functionName,
+            arguments: argumentsList
+        },
+        index,
+    };
+}
+
+const precedenceMap: Record<string, number> = {
+    '[': 0, '.': 0, '@': 0,
+    '<<': 2, '>>': 2,
+    '*': 3, '/': 3, '\\': 3,
+    '+': 4, '-': 4, 'LOR': 4, 'LAND': 4, 'XOR': 4,
+    '<': 5, '=': 5, '>': 5, '<=': 5, '>=': 5, '<>': 5,
+    'NOT': 6, 'AND': 7, 'OR': 8,
+    ':=': 9
+};
+
+function getPrecedence(token: Token): number {
+    return precedenceMap[token.value] ?? -1;
+}
+
 
 function getTokenValue(tokens: Token[]): string {
     log.write('DEBUG', 'called:');
