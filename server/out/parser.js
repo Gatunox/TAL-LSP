@@ -2,37 +2,64 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const helpers = require("./helper");
 const log_1 = require("./log");
-let context = 'Global';
-let index = 0;
+let globalContext = 'Global';
+let globalIndex = 0;
 let symbolsCache = new Map();
+let literals = new Set();
+let defines = new Set();
+function addToSymbolCache(context, name, entry) {
+    const key = `${context}.${name}`;
+    symbolsCache.set(key, entry);
+    log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
+}
+function clearCache() {
+    symbolsCache.clear();
+    ;
+}
+function throwValueError(tokens, index, expectedKeyword) {
+    throw new Error(`Expected '${expectedKeyword}' at index ${index}, but found '${tokens[index].value}' on line '${tokens[index].line}'`);
+}
+function throwTypeError(tokens, index, expectedKeyword) {
+    throw new Error(`Expected '${expectedKeyword}' at index ${index}, but found '${tokens[index].type}' on line '${tokens[index].line}'`);
+}
+function requireValue(tokens, index, expectedValue) {
+    if (tokens[index].value !== expectedValue) {
+        throwValueError(tokens, index, expectedValue);
+    }
+}
+function requireType(tokens, index, expectedType) {
+    if (tokens[index].type !== expectedType) {
+        throwTypeError(tokens, index, expectedType);
+    }
+}
 // Main Parsing Function
 function parseTokens(tokens) {
     log_1.default.write('DEBUG', 'called:');
-    index = 0;
-    symbolsCache.clear();
-    while (index < tokens.length) {
-        if (!tokens[index])
+    globalIndex = 0;
+    clearCache();
+    while (globalIndex < tokens.length) {
+        if (!tokens[globalIndex])
             break;
-        log_1.default.write('DEBUG', tokens[index]);
-        if (tokens[index] && tokens[index].type === 'Comment') {
+        log_1.default.write('DEBUG', tokens[globalIndex]);
+        if (tokens[globalIndex] && tokens[globalIndex].type === 'Comment') {
             parseComment(tokens);
         }
-        else if (tokens[index] && tokens[index].type === 'CommentLine') {
+        else if (tokens[globalIndex] && tokens[globalIndex].type === 'CommentLine') {
             parseCommentLine(tokens);
         }
-        else if (tokens[index] && tokens[index].type === 'DirectiveLine') {
+        else if (tokens[globalIndex] && tokens[globalIndex].type === 'DirectiveLine') {
             parseDirectives(tokens);
         }
-        else if (tokens[index] && tokens[index].type === 'Keyword') {
+        else if (tokens[globalIndex] && tokens[globalIndex].type === 'Keyword') {
             parseKeyword(tokens);
         }
-        else if (tokens[index] && helpers.isDataType(tokens[index].value)) {
+        else if (tokens[globalIndex] && helpers.isDataType(tokens[globalIndex].value)) {
             parseDeclarations(tokens);
         }
         else {
             //log.write('DEBUG', 'Else Before:');
             //log.write('DEBUG', tokens[index]);
-            index += 1;
+            globalIndex += 1;
             //log.write('DEBUG', 'Esle after:');
             //log.write('DEBUG', tokens[index]);
         }
@@ -41,143 +68,147 @@ function parseTokens(tokens) {
 }
 function parseComment(tokens) {
     log_1.default.write('DEBUG', 'called:');
-    index += 1; // Move past the ! comment
-    while (tokens[index] && tokens[index].type != 'Comment' && tokens[index].type != 'NewLine') {
-        log_1.default.write('DEBUG', tokens[index]);
-        index += 1; // move to next token; 
+    globalIndex += 1; // Move past the ! comment
+    while (tokens[globalIndex] && tokens[globalIndex].type != 'Comment' && tokens[globalIndex].type != 'NewLine') {
+        log_1.default.write('DEBUG', tokens[globalIndex]);
+        globalIndex += 1; // move to next token; 
     }
-    if (tokens[index] && tokens[index].type === 'Comment' && tokens[index].value === '!') {
-        log_1.default.write('DEBUG', tokens[index]);
-        index += 1; // Move past the !
+    if (tokens[globalIndex] && tokens[globalIndex].type === 'Comment' && tokens[globalIndex].value === '!') {
+        log_1.default.write('DEBUG', tokens[globalIndex]);
+        globalIndex += 1; // Move past the !
     }
-    return index;
+    return globalIndex;
 }
 function parseCommentLine(tokens) {
     log_1.default.write('DEBUG', 'called:');
-    index += 1; // Move past the ! comment
-    while (tokens[index] && tokens[index].type != 'NewLine') {
-        log_1.default.write('DEBUG', tokens[index]);
-        index += 1; // move to next token;
+    globalIndex += 1; // Move past the ! comment
+    while (tokens[globalIndex] && tokens[globalIndex].type != 'NewLine') {
+        log_1.default.write('DEBUG', tokens[globalIndex]);
+        globalIndex += 1; // move to next token;
     }
-    return index;
+    return globalIndex;
 }
 function parseDirectives(tokens) {
     log_1.default.write('DEBUG', 'called:');
     let key = '';
-    index += 1; // Move past the ! comment
-    while (tokens[index] && tokens[index].type != 'NewLine') {
-        log_1.default.write('DEBUG', tokens[index]);
-        if (tokens[index] && tokens[index].type === 'Comment') {
+    globalIndex += 1; // Move past the ! comment
+    while (tokens[globalIndex] && tokens[globalIndex].type != 'NewLine') {
+        log_1.default.write('DEBUG', tokens[globalIndex]);
+        if (tokens[globalIndex] && tokens[globalIndex].type === 'Comment') {
             parseComment(tokens);
         }
-        else if (helpers.isSimpleCompilerDirective(tokens[index].value.toUpperCase())) {
+        else if (helpers.isSimpleCompilerDirective(tokens[globalIndex].value.toUpperCase())) {
             parseSimpleDirective(tokens);
         }
-        else if (tokens[index].value.toUpperCase() === 'ASSERTION') {
+        else if (tokens[globalIndex].value.toUpperCase() === 'ASSERTION') {
             parseAssertionDirective(tokens);
         }
-        else if (tokens[index].value.toUpperCase() === 'COLUMNS') {
+        else if (tokens[globalIndex].value.toUpperCase() === 'COLUMNS') {
             parseColumnsDirective(tokens);
         }
-        else if (tokens[index].value.toUpperCase() === 'CROSSREF' ||
-            tokens[index].value.toUpperCase() === 'NOCROSSREF') {
+        else if (tokens[globalIndex].value.toUpperCase() === 'CROSSREF' ||
+            tokens[globalIndex].value.toUpperCase() === 'NOCROSSREF') {
             parseCrossRefDirective(tokens);
         }
-        else if (tokens[index].value.toUpperCase() === 'TARGET') {
+        else if (tokens[globalIndex].value.toUpperCase() === 'TARGET') {
             parseTargetDirective(tokens);
         }
-        else if (tokens[index].value.toUpperCase() === 'SOURCE') {
+        else if (tokens[globalIndex].value.toUpperCase() === 'SOURCE') {
             parseSourceDirective(tokens);
         }
         else {
-            let directive = tokens[index];
-            key = context + '.' + tokens[index].value;
+            let directive = tokens[globalIndex];
+            key = globalContext + '.' + tokens[globalIndex].value;
             symbolsCache.set(key, {
                 id: 'Directive',
                 type: 'none',
                 name: directive.value,
                 size: 1,
                 value: '',
-                context: context,
+                context: globalContext,
                 line: directive.line,
                 startChar: directive.startCharacter,
                 endChar: directive.endCharacter,
             });
+            globalIndex += 1; // Move past the directive
             log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
-            index += 1; // Move past the directive
-            if (tokens[index].type === 'Delimiter' && tokens[index].value === ',') {
-                log_1.default.write('DEBUG', tokens[index]);
-                index += 1; // Move past the comma;
+            if (tokens[globalIndex].type === 'Delimiter' && tokens[globalIndex].value === ',') {
+                log_1.default.write('DEBUG', tokens[globalIndex]);
+                globalIndex += 1; // Move past the comma;
             }
         }
     }
-    if (tokens[index] && tokens[index].type === 'NewLine' && tokens[index].value === '<CR><LF>') {
-        log_1.default.write('DEBUG', tokens[index]);
-        index += 1; // Move past the newline
+    if (tokens[globalIndex] && tokens[globalIndex].type === 'NewLine' && tokens[globalIndex].value === '<CR><LF>') {
+        log_1.default.write('DEBUG', tokens[globalIndex]);
+        globalIndex += 1; // Move past the newline
     }
-    return index;
+    return globalIndex;
 }
 function parseKeyword(tokens) {
     log_1.default.write('DEBUG', 'called:');
-    if (tokens[index] && helpers.isLiteral(tokens[index].value)) {
+    if (tokens[globalIndex] && helpers.isLiteral(tokens[globalIndex].value)) {
         parseLiteral(tokens);
     }
-    else if (tokens[index] && helpers.isDefine(tokens[index].value)) {
+    else if (tokens[globalIndex] && helpers.isDefine(tokens[globalIndex].value)) {
         parseDefine(tokens);
     }
-    else {
-        index += 1; // move to next token;
+    else if (tokens[globalIndex] && helpers.isStruct(tokens[globalIndex].value)) {
+        parseStructure(tokens);
     }
-    return index;
+    else {
+        globalIndex += 1; // move to next token;
+    }
+    return globalIndex;
 }
 function parseLiteral(tokens) {
     log_1.default.write('DEBUG', 'called:');
     let key = '';
-    index += 1; // Move past the LITERAL Keyword   
-    while (index < tokens.length) {
-        if (!tokens[index])
+    globalIndex += 1; // Move past the LITERAL Keyword   
+    while (globalIndex < tokens.length) {
+        if (!tokens[globalIndex])
             break;
-        if (tokens[index].value === ';')
+        if (tokens[globalIndex].value === ';')
             break;
-        while (index < tokens.length && tokens[index].type != 'Identifier') {
-            log_1.default.write('DEBUG', tokens[index]);
-            index += 1; // move to next token; 
+        while (globalIndex < tokens.length && tokens[globalIndex].type != 'Identifier') {
+            log_1.default.write('DEBUG', tokens[globalIndex]);
+            globalIndex += 1; // move to next token; 
         }
-        let indent = tokens[index];
-        index += 1; // Move passa the Identifier
-        if (tokens[index].type === 'Delimiter' && tokens[index].value === '=') {
-            log_1.default.write('DEBUG', tokens[index]);
-            index += 1; // Move past the =;
+        let indent = tokens[globalIndex];
+        globalIndex += 1; // Move passa the Identifier
+        if (tokens[globalIndex].type === 'Delimiter' && tokens[globalIndex].value === '=') {
+            log_1.default.write('DEBUG', tokens[globalIndex]);
+            globalIndex += 1; // Move past the =;
         }
-        log_1.default.write('DEBUG', tokens[index]);
-        let value = tokens[index].value;
-        index += 1; // Move passa constant value
-        while (index < tokens.length && tokens[index].value !== ',' && tokens[index].value !== ';') {
-            log_1.default.write('DEBUG', tokens[index]);
-            value += tokens[index].value;
-            index += 1;
+        log_1.default.write('DEBUG', tokens[globalIndex]);
+        let value = tokens[globalIndex].value;
+        globalIndex += 1; // Move passa constant value
+        while (globalIndex < tokens.length && tokens[globalIndex].value !== ',' && tokens[globalIndex].value !== ';') {
+            log_1.default.write('DEBUG', tokens[globalIndex]);
+            value += tokens[globalIndex].value;
+            globalIndex += 1;
         }
-        key = context + '.' + indent.value;
+        key = globalContext + '.' + indent.value;
+        literals.add(key);
         symbolsCache.set(key, {
             id: 'Literal',
             type: '',
             name: indent.value,
             size: 1,
             value: value,
-            context: context,
+            context: globalContext,
             line: indent.line,
             startChar: indent.startCharacter,
             endChar: indent.endCharacter,
         });
         log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
-        if (tokens[index] && tokens[index].type === 'Delimiter' && tokens[index].value === ',') {
-            log_1.default.write('DEBUG', tokens[index]);
-            index += 1; // Move past comma, since we do not have to skip the ;
+        if (tokens[globalIndex] && tokens[globalIndex].type === 'Delimiter' && tokens[globalIndex].value === ',') {
+            log_1.default.write('DEBUG', tokens[globalIndex]);
+            globalIndex += 1; // Move past comma, since we do not have to skip the ;
         }
     }
-    if (index < tokens.length && tokens[index].type === 'Delimiter' && tokens[index].value === ';') {
-        log_1.default.write('DEBUG', tokens[index]);
-        index += 1; // Move past comma, since we do not have to skip the ;
+    if (globalIndex < tokens.length && tokens[globalIndex].type === 'Delimiter' && tokens[globalIndex].value === ';') {
+        log_1.default.write('DEBUG', tokens[globalIndex]);
+        globalIndex += 1; // Move past comma, since we do not have to skip the ;
     }
     log_1.default.write('DEBUG', 'finished:');
 }
@@ -185,46 +216,47 @@ function parseDefine(tokens) {
     log_1.default.write('DEBUG', 'called:');
     let parentesis = false;
     let key = '';
-    index += 1; // Move past the DEFINE Keyword   
-    while (index < tokens.length) {
-        if (!tokens[index])
+    globalIndex += 1; // Move past the DEFINE Keyword   
+    while (globalIndex < tokens.length) {
+        if (!tokens[globalIndex])
             break;
-        if (tokens[index].value === ';')
+        if (tokens[globalIndex].value === ';')
             break;
-        while (index < tokens.length && tokens[index].type != 'Identifier') {
-            log_1.default.write('DEBUG', tokens[index]);
-            index += 1; // move to next token; 
+        while (globalIndex < tokens.length && tokens[globalIndex].type != 'Identifier') {
+            log_1.default.write('DEBUG', tokens[globalIndex]);
+            globalIndex += 1; // move to next token; 
         }
-        let indent = tokens[index];
-        key = context + '.' + indent.value;
+        let indent = tokens[globalIndex];
+        key = globalContext + '.' + indent.value;
+        defines.add(key);
         symbolsCache.set(key, {
             id: 'Define',
             type: 'Indentifier',
             name: indent.value,
             size: 1,
             value: indent.value,
-            context: context,
+            context: globalContext,
             line: indent.line,
             startChar: indent.startCharacter,
             endChar: indent.endCharacter,
         });
         log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
-        index += 1; // Move passa the Identifier
-        while (index < tokens.length && tokens[index].value != '(' && tokens[index].value != '=') {
-            log_1.default.write('DEBUG', tokens[index]);
-            index += 1; // move to next token; 
+        globalIndex += 1; // Move passa the Identifier
+        while (globalIndex < tokens.length && tokens[globalIndex].value != '(' && tokens[globalIndex].value != '=') {
+            log_1.default.write('DEBUG', tokens[globalIndex]);
+            globalIndex += 1; // move to next token; 
         }
         // Check if we are starting with the expected opening token
-        if (tokens[index].value === '(') {
+        if (tokens[globalIndex].value === '(') {
             parentesis = true;
-            index += 1;
+            globalIndex += 1;
         }
-        while (index < tokens.length && parentesis === true) {
-            if (tokens[index].value === ')') {
+        while (globalIndex < tokens.length && parentesis === true) {
+            if (tokens[globalIndex].value === ')') {
                 parentesis = false; // Found a closing token
             }
-            if (parentesis && tokens[index].value !== ',') {
-                let parameter = tokens[index];
+            if (parentesis && tokens[globalIndex].value !== ',') {
+                let parameter = tokens[globalIndex];
                 let paramkey = key + '.' + parameter.value;
                 symbolsCache.set(paramkey, {
                     id: 'Define',
@@ -232,121 +264,365 @@ function parseDefine(tokens) {
                     name: parameter.value,
                     size: 1,
                     value: parameter.value,
-                    context: context,
+                    context: globalContext,
                     line: parameter.line,
                     startChar: parameter.startCharacter,
                     endChar: parameter.endCharacter,
                 });
                 log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
             }
-            index += 1;
+            globalIndex += 1;
         }
-        while (index < tokens.length && tokens[index].value != '=') {
+        while (globalIndex < tokens.length && tokens[globalIndex].value != '=') {
             log_1.default.write('DEBUG', 'looking for =');
-            log_1.default.write('DEBUG', tokens[index]);
-            index += 1; // move to next token; 
+            log_1.default.write('DEBUG', tokens[globalIndex]);
+            globalIndex += 1; // move to next token; 
         }
-        if (tokens[index].type === 'Delimiter' && tokens[index].value === '=') {
+        if (tokens[globalIndex].type === 'Delimiter' && tokens[globalIndex].value === '=') {
             log_1.default.write('DEBUG', '= found');
-            log_1.default.write('DEBUG', tokens[index]);
-            index += 1; // Move past the =
+            log_1.default.write('DEBUG', tokens[globalIndex]);
+            globalIndex += 1; // Move past the =
         }
-        log_1.default.write('DEBUG', tokens[index]);
+        log_1.default.write('DEBUG', tokens[globalIndex]);
         let definebody = [];
-        definebody.push(tokens[index]);
-        index += 1; // Move passa constant value
-        while (index < tokens.length && tokens[index].value !== '#') {
-            log_1.default.write('DEBUG', tokens[index]);
-            definebody.push(tokens[index]);
-            index += 1;
+        definebody.push(tokens[globalIndex]);
+        globalIndex += 1; // Move passa constant value
+        while (globalIndex < tokens.length && tokens[globalIndex].value !== '#') {
+            log_1.default.write('DEBUG', tokens[globalIndex]);
+            definebody.push(tokens[globalIndex]);
+            globalIndex += 1;
         }
-        log_1.default.write('DEBUG', tokens[index]);
+        log_1.default.write('DEBUG', tokens[globalIndex]);
         symbolsCache.set(key + '.Body', {
             id: 'Define',
             type: 'Body',
             name: indent.value,
             size: 1,
             value: definebody,
-            context: context,
+            context: globalContext,
             line: indent.line,
             startChar: indent.startCharacter,
-            endChar: tokens[index].endCharacter,
+            endChar: tokens[globalIndex].endCharacter,
         });
         log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
-        index += 1; // Move past the #
-        while (index < tokens.length && tokens[index].value != ',' && tokens[index].value != ';') {
+        globalIndex += 1; // Move past the #
+        while (globalIndex < tokens.length && tokens[globalIndex].value != ',' && tokens[globalIndex].value != ';') {
             log_1.default.write('DEBUG', 'looking for =');
-            log_1.default.write('DEBUG', tokens[index]);
-            index += 1; // move to next token; 
+            log_1.default.write('DEBUG', tokens[globalIndex]);
+            globalIndex += 1; // move to next token; 
         }
-        if (tokens[index].value === ',') {
-            log_1.default.write('DEBUG', tokens[index]);
-            index += 1;
+        if (tokens[globalIndex].value === ',') {
+            log_1.default.write('DEBUG', tokens[globalIndex]);
+            globalIndex += 1;
         }
-        if (tokens[index].value === ';') {
-            log_1.default.write('DEBUG', tokens[index]);
-            index += 1;
+        if (tokens[globalIndex].value === ';') {
+            log_1.default.write('DEBUG', tokens[globalIndex]);
+            globalIndex += 1;
             break;
         }
     }
 }
 function parseDeclarations(tokens) {
     log_1.default.write('DEBUG', 'called:');
-    const type = parseDataType(tokens);
-    log_1.default.write('DEBUG', `type: ${type}`);
-    const isIndirection = checkForTypeAt(tokens, index, 'Indirection');
+    const constType = parseDataType(tokens, globalIndex);
+    globalIndex = constType.index;
+    log_1.default.write('DEBUG', `type: ${constType.dataType}`);
+    const isIndirection = checkForTypeAt(tokens, globalIndex, 'Indirection');
     log_1.default.write('DEBUG', `isIndirection: ${isIndirection}`);
     // Adjust base position based on indirection. 
     // if indirection we only skip the ident otherwise both
-    const basePosition = index + (isIndirection ? 2 : 1);
+    const basePosition = globalIndex + (isIndirection ? 2 : 1);
     const hasBounds = checkBounds(tokens, basePosition);
     const BOFFSET = hasBounds ? 5 : 0;
     const isReadOnly = checkReadOnly(tokens, basePosition + BOFFSET);
     log_1.default.write('DEBUG', `isArray: ${hasBounds}`);
     log_1.default.write('DEBUG', `isReadOnly: ${isReadOnly}`);
-    if (helpers.isStruct(type)) {
+    if (helpers.isStruct(constType.dataType)) {
         log_1.default.write('DEBUG', 'isStruct: true');
-        // parseStruct(tokens);
+        parseStructure(tokens);
     }
     else if (hasBounds || isReadOnly) {
         log_1.default.write('DEBUG', 'isArray: true');
-        parseArray(tokens, type);
+        parseArray(tokens, constType.dataType);
     }
     else if (isIndirection) {
         log_1.default.write('DEBUG', 'isIndirection: true');
         // parseIndirection(tokens, type);
     }
     else {
-        parseVariable(tokens, type);
+        parseVariable(tokens, constType.dataType);
     }
+}
+function parseStructure(tokens) {
+    log_1.default.write('DEBUG', 'called:');
+    requireValue(tokens, globalIndex, "STRUCT");
+    globalIndex++;
+    // Determine indirection type (. or .EXT) or None
+    let indirectionType = "None";
+    if (tokens[globalIndex].value === ".") {
+        indirectionType = "Indirect";
+        globalIndex++;
+    }
+    else if (tokens[globalIndex].value === ".EXT ") {
+        indirectionType = "ExtendedIndirect";
+        globalIndex++;
+    }
+    // Get the identifier for the structure
+    requireType(tokens, globalIndex, "Identifier");
+    const identifierToken = tokens[globalIndex];
+    const identifier = identifierToken.value;
+    globalIndex++;
+    // Parse optional bounds [lower:upper]
+    let lowerBound = 0, upperBound = 0;
+    if (tokens[globalIndex].value === "[") {
+        lowerBound = parseInt(tokens[globalIndex + 1].value, 10);
+        upperBound = parseInt(tokens[globalIndex + 3].value, 10);
+        globalIndex += 5; // Move past bounds [lower:upper]
+    }
+    requireValue(tokens, globalIndex, ";");
+    globalIndex++;
+    // Add structure to symbolCache
+    const currentContext = globalContext;
+    globalContext += `.${identifier}`;
+    addToSymbolCache(currentContext, identifier, {
+        id: 'Struct',
+        type: 'Struct',
+        name: identifier,
+        size: upperBound - lowerBound + 1,
+        value: "",
+        context: currentContext,
+        line: identifierToken.line,
+        startChar: identifierToken.startCharacter,
+        endChar: identifierToken.endCharacter
+    });
+    // Parse structure layout between BEGIN and END
+    const structureLayout = parseStructureLayout(tokens, globalIndex);
+    globalIndex = structureLayout.index;
+    // Restore the previous context level after parsing this structure
+    globalContext = currentContext;
+    return {
+        AST: {
+            type: "DefinitionStructure",
+            name: identifier,
+            indirectionType,
+            bounds: { lower: lowerBound, upper: upperBound },
+            structureLayout: structureLayout.AST
+        },
+        index: globalIndex
+    };
+}
+function parseStructureVariable(tokens, index) {
+    log_1.default.write('DEBUG', 'called:');
+    const constType = parseDataType(tokens, index);
+    index = constType.index;
+    requireType(tokens, index, "Identifier");
+    const identifier = tokens[index].value;
+    index++;
+    if (tokens[index].value !== ";") {
+        throw new Error(`Expected ';' after variable declaration at index ${index}`);
+    }
+    index++; // Move past the semicolon
+    addToSymbolCache(globalContext, identifier, {
+        id: 'Variable',
+        type: constType.dataType,
+        name: identifier,
+        size: 1,
+        value: "",
+        context: globalContext,
+        line: tokens[index].line,
+        startChar: tokens[index].startCharacter,
+        endChar: tokens[index].endCharacter
+    });
+    return {
+        AST: { type: "Variable", dataType: constType.dataType, name: identifier },
+        index
+    };
+}
+function parseStructureArray(tokens, index) {
+    log_1.default.write('DEBUG', 'called:');
+    const type = tokens[index].value;
+    index++;
+    requireType(tokens, globalIndex, "Identifier");
+    const identifier = tokens[index].value;
+    index++;
+    let lowerBound = 0, upperBound = 0;
+    if (tokens[index].value === "[") {
+        lowerBound = parseInt(tokens[index + 1].value, 10);
+        upperBound = parseInt(tokens[index + 3].value, 10);
+        index += 5;
+    }
+    addToSymbolCache(globalContext, identifier, {
+        id: 'Array',
+        type,
+        name: identifier,
+        size: upperBound - lowerBound + 1,
+        value: "",
+        context: globalContext,
+        line: tokens[index].line,
+        startChar: tokens[index].startCharacter,
+        endChar: tokens[index].endCharacter
+    });
+    return {
+        AST: { type: "Array", dataType: type, name: identifier, bounds: { lower: lowerBound, upper: upperBound } },
+        index
+    };
+}
+function parseSubstructure(tokens, index) {
+    log_1.default.write('DEBUG', 'called:');
+    requireValue(tokens, globalIndex, "STRUCT");
+    index++;
+    // Capture the identifier for the structure
+    requireType(tokens, globalIndex, "Identifier");
+    const identifierToken = tokens[index];
+    const identifier = identifierToken.value;
+    index++;
+    // Handle Referral Structure (STRUCT identifier (referral))
+    let structureType = "DefinitionStructure";
+    let referral;
+    if (tokens[index].value === "(" && tokens[index + 1].type === "Identifier" && tokens[index + 2].value === ")") {
+        structureType = "ReferralStructure";
+        referral = tokens[index + 1].value; // Referral identifier
+        index += 3; // Skip over '(referral)'
+    }
+    // Parse optional bounds [lower:upper]
+    let lowerBound = 0, upperBound = 0;
+    if (tokens[index].value === "[") {
+        lowerBound = parseInt(tokens[index + 1].value, 10);
+        upperBound = parseInt(tokens[index + 3].value, 10);
+        index += 5; // Move past bounds [lower:upper]
+    }
+    // Add the structure to symbolCache
+    const currentContext = globalContext;
+    globalContext += `.${identifier}`;
+    addToSymbolCache(currentContext, identifier, {
+        id: 'Struct',
+        type: structureType,
+        name: identifier,
+        size: upperBound - lowerBound + 1,
+        value: "",
+        context: currentContext,
+        line: identifierToken.line,
+        startChar: identifierToken.startCharacter,
+        endChar: identifierToken.endCharacter
+    });
+    // For DefinitionStructure, parse structure layout between BEGIN and END
+    let structureLayout;
+    if (structureType === "DefinitionStructure") {
+        const layoutResult = parseStructureLayout(tokens, index);
+        structureLayout = layoutResult.AST;
+        index = layoutResult.index;
+    }
+    // Restore previous context level after parsing this structure
+    globalContext = currentContext;
+    return {
+        AST: {
+            type: structureType,
+            name: identifier,
+            bounds: { lower: lowerBound, upper: upperBound },
+            structureLayout,
+            referral
+        },
+        index
+    };
+}
+function parseStructureLayout(tokens, index) {
+    log_1.default.write('DEBUG', 'called:');
+    requireValue(tokens, index, "BEGIN");
+    index++;
+    const layoutElements = [];
+    while (index < tokens.length && tokens[index].value !== "END") {
+        const element = parseStructureElement(tokens, index);
+        layoutElements.push(element.AST);
+        index = element.index;
+    }
+    if (tokens[index].value !== "END") {
+        throw new Error(`Expected 'END' at index ${index}, but found '${tokens[index].value}' on line '${tokens[index].line}'`);
+    }
+    index++;
+    return { AST: layoutElements, index };
+}
+function parseStructureElement(tokens, index) {
+    log_1.default.write('DEBUG', 'called:');
+    log_1.default.write('DEBUG', tokens[index]);
+    const token = tokens[index];
+    let element;
+    switch (token.value.toUpperCase()) {
+        case "STRING":
+        case "INT":
+        case "UNSIGNED":
+        case "FIXED":
+        case "REAL":
+            // Check if the next token indicates an array declaration
+            if (tokens[index + 1].type === "Identifier" && tokens[index + 2].value === "[") {
+                const arrayResult = parseStructureArray(tokens, index);
+                element = arrayResult.AST;
+                index = arrayResult.index;
+            }
+            else {
+                const variableResult = parseStructureVariable(tokens, index);
+                element = variableResult.AST;
+                index = variableResult.index;
+            }
+            break;
+        case "STRUCT":
+            const substructureResult = parseSubstructure(tokens, index);
+            element = substructureResult.AST;
+            index = substructureResult.index;
+            break;
+        case "FILLER":
+            const fillerResult = parseFiller(tokens, index);
+            element = fillerResult.AST;
+            index = fillerResult.index;
+            break;
+        default:
+            throw new Error(`Unexpected element ${token.value}, at index ${index} on line ${token.line}`);
+    }
+    return { AST: element, index };
+}
+function parseFiller(tokens, index) {
+    log_1.default.write('DEBUG', 'called:');
+    let size = 1;
+    if (tokens[index].value !== "FILLER" && tokens[index].value !== "BIT_FILLER") {
+        throw new Error(`Expected 'FILLER' or 'BIT_FILLER' at index ${index}, but found '${tokens[index].value}' on line '${tokens[index].line}'`);
+    }
+    const fillerType = tokens[index].value;
+    index++;
+    if (tokens[index].type === "Number") {
+        size = parseInt(tokens[index].value, 10);
+        index++;
+    }
+    return {
+        AST: { type: "Filler", fillerType: fillerType, size: size.toString() },
+        index
+    };
 }
 function parseVariable(tokens, type) {
     log_1.default.write('DEBUG', 'called:');
-    const startline = tokens[index].line;
-    const startChar = tokens[index].startCharacter;
-    let endline = tokens[index].line;
-    let endChar = tokens[index].endCharacter;
+    const startline = tokens[globalIndex].line;
+    const startChar = tokens[globalIndex].startCharacter;
+    let endline = tokens[globalIndex].line;
+    let endChar = tokens[globalIndex].endCharacter;
     let lowerBoud = 0;
     let upperBound = 0;
     let initialization = null;
     do {
-        index = skipComma(tokens, index); // Skip comma for multiple variables
+        globalIndex = skipComma(tokens, globalIndex); // Skip comma for multiple variables
         const ident = parseIdent(tokens);
         if (!checkForValue(tokens, ";") && !checkForValue(tokens, ':=')) {
             log_1.default.write('ERROR', 'failed.');
-            throw new Error(`Expected ';' or ':=' at line ${tokens[index].line} but found '${tokens[index].value}'`);
+            throw new Error(`Expected ';' or ':=' at line ${tokens[globalIndex].line}, but found '${tokens[globalIndex].value}' on line '${tokens[globalIndex].line}'`);
         }
-        if (tokens[index].value === ':=') {
-            log_1.default.write('DEBUG', tokens[index]);
-            index += 1; // Skip :=
-            const expressionResult = parseArithmeticExpression(tokens, index);
+        if (tokens[globalIndex].value === ':=') {
+            log_1.default.write('DEBUG', tokens[globalIndex]);
+            globalIndex += 1; // Skip :=
+            const expressionResult = parseArithmeticExpression(tokens, globalIndex);
             log_1.default.write('DEBUG', JSON.stringify(expressionResult));
             initialization = expressionResult.AST;
-            index = expressionResult.index;
+            globalIndex = expressionResult.index;
         }
-        endline = tokens[index - 1].line;
-        endChar = tokens[index - 1].endCharacter;
-        const key = context + '.' + ident;
+        endline = tokens[globalIndex - 1].line;
+        endChar = tokens[globalIndex - 1].endCharacter;
+        const key = globalContext + '.' + ident;
         const line = '[' + startline.toString() + ':' + endline.toString() + ']';
         const size = upperBound - lowerBoud + 1;
         symbolsCache.set(key, {
@@ -355,52 +631,52 @@ function parseVariable(tokens, type) {
             name: ident,
             size: size,
             value: initialization || "",
-            context: context,
+            context: globalContext,
             line: line,
             startChar: startChar,
             endChar: endChar + 1 // +1 account for , o ;
         });
         log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
-    } while (index < tokens.length && checkForValue(tokens, ',')); // fond a comma, let's continue
+    } while (globalIndex < tokens.length && checkForValue(tokens, ',')); // fond a comma, let's continue
     if (!checkForValue(tokens, ";")) {
-        log_1.default.write('ERROR', tokens[index]); //NO NO NO TODO: see that to do.
+        log_1.default.write('ERROR', tokens[globalIndex]); //NO NO NO TODO: see that to do.
     }
 }
 function parseArray(tokens, type) {
     log_1.default.write('DEBUG', 'called:');
-    const startline = tokens[index].line;
-    const startChar = tokens[index].startCharacter;
-    let endline = tokens[index].line;
-    let endChar = tokens[index].endCharacter;
+    const startline = tokens[globalIndex].line;
+    const startChar = tokens[globalIndex].startCharacter;
+    let endline = tokens[globalIndex].line;
+    let endChar = tokens[globalIndex].endCharacter;
     let initialization = null;
     do {
-        index = skipComma(tokens, index); // Skip comma for multiple variables
+        globalIndex = skipComma(tokens, globalIndex); // Skip comma for multiple variables
         const ident = parseIdent(tokens);
         log_1.default.write('DEBUG', `ident: ${ident}`);
-        const isIndirection = checkForTypeAt(tokens, index, 'Indirection');
+        const isIndirection = checkForTypeAt(tokens, globalIndex, 'Indirection');
         const IOFFSET = isIndirection ? 1 : 0;
-        const hasBounds = checkBounds(tokens, index + IOFFSET);
+        const hasBounds = checkBounds(tokens, globalIndex + IOFFSET);
         const BOFFSET = hasBounds ? 5 : 0;
-        const isReadOnly = checkReadOnly(tokens, index + BOFFSET);
+        const isReadOnly = checkReadOnly(tokens, globalIndex + BOFFSET);
         const ROFFSET = isReadOnly ? 2 : 0;
-        const lowerBound = hasBounds ? Number(tokens[index + 1].value) : null;
-        const upperBound = hasBounds ? Number(tokens[index + 3].value) : null;
-        index += BOFFSET + ROFFSET; // Skip [X:XX] or = 'P' if exists
+        const lowerBound = hasBounds ? Number(tokens[globalIndex + 1].value) : null;
+        const upperBound = hasBounds ? Number(tokens[globalIndex + 3].value) : null;
+        globalIndex += BOFFSET + ROFFSET; // Skip [X:XX] or = 'P' if exists
         if (!checkForValue(tokens, ";") && !checkForValue(tokens, ':=')) {
             log_1.default.write('ERROR', 'failed.');
-            throw new Error(`Expected ';' or ':=' at line ${tokens[index].line} but found '${tokens[index].value}'`);
+            throw new Error(`Expected ';' or ':=' at line ${tokens[globalIndex].line}, but found '${tokens[globalIndex].value}' on line '${tokens[globalIndex].line}'`);
         }
-        if (tokens[index].value === ':=') {
-            log_1.default.write('DEBUG', tokens[index]);
-            index++;
-            const expressionResult = parseConstantListExpression(tokens, index);
+        if (tokens[globalIndex].value === ':=') {
+            log_1.default.write('DEBUG', tokens[globalIndex]);
+            globalIndex++;
+            const expressionResult = parseConstantListExpression(tokens, globalIndex);
             initialization = expressionResult.AST;
-            index = expressionResult.index;
+            globalIndex = expressionResult.index;
         }
         const readOnlySize = getConstantArrayLength(initialization);
-        endline = tokens[index - 1].line;
-        endChar = tokens[index - 1].endCharacter;
-        const key = `${context}.${ident}`;
+        endline = tokens[globalIndex - 1].line;
+        endChar = tokens[globalIndex - 1].endCharacter;
+        const key = `${globalContext}.${ident}`;
         const line = `[${startline}:${endline}]`;
         const size = hasBounds ? (upperBound - lowerBound + 1) : readOnlySize;
         symbolsCache.set(key, {
@@ -409,15 +685,15 @@ function parseArray(tokens, type) {
             name: ident,
             size,
             value: initialization || "",
-            context,
+            context: globalContext,
             line,
             startChar,
             endChar: endChar + 1 // +1 to account for ',' or ';'
         });
         log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
-    } while (index < tokens.length && checkForValue(tokens, ','));
+    } while (globalIndex < tokens.length && checkForValue(tokens, ','));
     if (!checkForValue(tokens, ";")) {
-        log_1.default.write('ERROR', tokens[index]); // Expected ';' at end
+        log_1.default.write('ERROR', tokens[globalIndex]); // Expected ';' at end
     }
 }
 function parseConstantListExpression(tokens, index) {
@@ -479,19 +755,20 @@ function parseRepetition(tokens, index) {
         };
     }
     else {
-        throw new Error(`Expected '[' after repetition factor at index ${index}`);
+        throw new Error(`Expected '[' after repetition factor at index ${index}, but found '${tokens[index].value}' on line '${tokens[index].line}'`);
     }
 }
 // Helper: Parse an individual constant (Number, Literal, or String)
 function parseConstant(tokens, index) {
     const token = tokens[index];
-    if (token.type === 'Number' || token.type === 'Literal' || token.type === 'String') {
+    if (token.type === 'Number' || token.type === 'Literal' || token.type === 'String' ||
+        (token.type === 'Identifier' && literals.has(token.value))) {
         return {
             constantNode: { type: 'Constant', value: token.value },
             newIndex: index + 1
         };
     }
-    throw new Error(`Expected constant at index ${index}, found '${token.value}'`);
+    throw new Error(`Expected constant at index ${index}, found '${token.value} but found '${tokens[index].value}' on line '${tokens[index].line}'`);
 }
 // Helper: Skip commas and newlines between elements
 function skipCommaAndNewlines(tokens, index) {
@@ -517,35 +794,41 @@ function checkReadOnly(tokens, index) {
     return (checkForValueAt(tokens, index, "=") &&
         checkForValueAt(tokens, index + 1, "'P'"));
 }
-function parseDataType(tokens) {
+function parseDataType(tokens, index) {
     log_1.default.write('DEBUG', 'called:');
-    let openParenthesis = 1;
-    let closeParenthesis = 3;
-    if (helpers.isString(tokens[index].value)) {
-        let value = tokens[index].value;
+    log_1.default.write('DEBUG', tokens[index]);
+    const opOffset = 1;
+    const cpOffset = 3;
+    let retType = "";
+    const tokenValue = tokens[index].value;
+    if (helpers.isString(tokenValue)) {
+        let value = tokenValue;
         index += 1;
-        return value;
+        retType = value;
     }
-    else if (helpers.isInt(tokens[index].value) ||
-        helpers.isReal(tokens[index].value) ||
-        helpers.isUnsigned(tokens[index].value) ||
-        helpers.isFixed(tokens[index].value)) {
-        let value = tokens[index].value;
-        let width = tokens[index + 2].value;
-        if (checkForValueAt(tokens, index + openParenthesis, '(') &&
-            checkForValueAt(tokens, index + closeParenthesis, ')')) {
+    else if (helpers.isInt(tokenValue) ||
+        helpers.isReal(tokenValue) ||
+        helpers.isUnsigned(tokenValue) ||
+        helpers.isFixed(tokenValue)) {
+        const width = tokens[index + 2].value;
+        if (checkForValueAt(tokens, index + opOffset, '(') &&
+            checkForValueAt(tokens, index + cpOffset, ')')) {
             index += 4;
-            return value + '(' + width + ')';
+            retType = tokenValue + '(' + width + ')';
         }
         else {
-            if (helpers.isUnsigned(tokens[index].value))
+            if (helpers.isUnsigned(tokenValue))
                 log_1.default.write('ERROR', tokens[index]); //NO NO NO TODO: see that to do.
             index += 1;
-            return value;
+            retType = tokenValue;
         }
     }
-    log_1.default.write('ERROR', tokens[index]); //NO NO NO TODO: see that to do.
-    return '';
+    else {
+        // Set a default type or handle an unexpected token type
+        throw new Error(`Unexpected data type at index ${index}, found '${tokenValue}'`);
+    }
+    log_1.default.write('DEBUG', `dataType: ${retType}, Index: ${index}`);
+    return { dataType: retType, index };
 }
 function parseArithmeticExpression(tokens, index, precedence = 0) {
     // Parse the left side of the expression, starting with unary or primary
@@ -595,11 +878,8 @@ function parseUnary(tokens, index) {
 }
 function parsePrimary(tokens, index) {
     const token = tokens[index];
-    // Treat `;` as the end of an expression and return the current AST
-    //if (token.value === ';') {
-    //    return { AST: { type: 'EndOfExpression' }, index };
-    //}
-    if (token.type === 'Number' || token.type === 'Literal') {
+    if (token.type === 'Number' || token.type === 'Literal' ||
+        (token.type === 'Identifier' && literals.has(token.value))) {
         index++;
         return { AST: { type: 'Constant', value: token.value }, index };
     }
@@ -615,7 +895,7 @@ function parsePrimary(tokens, index) {
         const expressionResult = parseArithmeticExpression(tokens, index, 9);
         index = expressionResult.index;
         if (tokens[index].value !== ')') {
-            throw new Error(`Expected ')' at index ${index}`);
+            throw new Error(`Expected ')' at index ${index}, but found '${tokens[index].value}' on line '${tokens[index].line}'`);
         }
         index++;
         return { AST: expressionResult.AST, index };
@@ -626,7 +906,7 @@ function parseFunctionCall(tokens, index) {
     const functionName = tokens[index].value; // Assume function name token
     index++; // Move past function name
     if (tokens[index].value !== '(') {
-        throw new Error(`Expected '(' after function name at line ${tokens[index].line}`);
+        throw new Error(`Expected (' after function at index ${index}, but found '${tokens[index].value}' on line '${tokens[index].line}'`);
     }
     index++; // Skip '('
     const argumentsList = [];
@@ -641,7 +921,7 @@ function parseFunctionCall(tokens, index) {
         }
     }
     if (tokens[index].value !== ')') {
-        throw new Error(`Expected ')' after function arguments at line ${tokens[index].line}`);
+        throw new Error(`')' after function arguments at index ${index}, but found '${tokens[index].value}' on line '${tokens[index].line}'`);
     }
     index++; // Skip ')'
     return {
@@ -668,39 +948,39 @@ function getPrecedence(token) {
 function getTokenValue(tokens) {
     log_1.default.write('DEBUG', 'called:');
     let retVal = '';
-    if (tokens[index] && tokens[index].value) {
-        retVal = tokens[index].value;
-        index += 1;
+    if (tokens[globalIndex] && tokens[globalIndex].value) {
+        retVal = tokens[globalIndex].value;
+        globalIndex += 1;
     }
     if (!retVal) {
-        log_1.default.write('ERROR', tokens[index]); //NO NO NO TODO: see that to do.
+        log_1.default.write('ERROR', tokens[globalIndex]); //NO NO NO TODO: see that to do.
     }
     return retVal;
 }
 function checkForValue(tokens, value) {
     log_1.default.write('DEBUG', 'called:');
-    if (tokens[index] && tokens[index].value === value) {
+    if (tokens[globalIndex] && tokens[globalIndex].value === value) {
         return true;
     }
     return false;
 }
 function checkForValueAt(tokens, position, value) {
     log_1.default.write('DEBUG', 'called:');
-    if (tokens[index] && tokens[position].value === value) {
+    if (tokens[globalIndex] && tokens[position].value === value) {
         return true;
     }
     return false;
 }
 function checkForType(tokens, type) {
     log_1.default.write('DEBUG', 'called:');
-    if (tokens[index] && tokens[index].type === type) {
+    if (tokens[globalIndex] && tokens[globalIndex].type === type) {
         return true;
     }
     return false;
 }
 function checkForTypeAt(tokens, position, type) {
     log_1.default.write('DEBUG', 'called:');
-    if (tokens[index] && tokens[position].type === type) {
+    if (tokens[globalIndex] && tokens[position].type === type) {
         return true;
     }
     return false;
@@ -709,93 +989,93 @@ function parseIdent(tokens) {
     log_1.default.write('DEBUG', 'called:');
     let retVal = '';
     // If we find name gets it's value
-    if (tokens[index].type === 'Identifier') {
-        retVal = tokens[index].value;
+    if (tokens[globalIndex].type === 'Identifier') {
+        retVal = tokens[globalIndex].value;
         log_1.default.write('DEBUG', `Found variable name: ${retVal}`);
-        index += 1;
+        globalIndex += 1;
         return retVal;
     }
-    log_1.default.write('ERROR', tokens[index]); //NO NO NO TODO: see that to do.
+    log_1.default.write('ERROR', tokens[globalIndex]); //NO NO NO TODO: see that to do.
     return retVal;
 }
 function parseCrossRefDirective(tokens) {
-    log_1.default.write('DEBUG', tokens[index]);
+    log_1.default.write('DEBUG', tokens[globalIndex]);
     log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
-    return index;
+    return globalIndex;
 }
 function parseColumnsDirective(tokens) {
-    log_1.default.write('DEBUG', tokens[index]);
+    log_1.default.write('DEBUG', tokens[globalIndex]);
     log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
-    return index;
+    return globalIndex;
 }
 function parseAssertionDirective(tokens) {
-    log_1.default.write('DEBUG', tokens[index]);
+    log_1.default.write('DEBUG', tokens[globalIndex]);
     log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
-    return index;
+    return globalIndex;
 }
 function parseSimpleDirective(tokens) {
-    log_1.default.write('DEBUG', tokens[index]);
-    let directive = tokens[index];
-    let key = context + '.' + directive.value;
+    log_1.default.write('DEBUG', tokens[globalIndex]);
+    const directive = tokens[globalIndex];
+    const key = globalContext + '.' + directive.value;
     symbolsCache.set(key, {
         id: 'Directive',
         type: 'none',
         name: directive.value,
         size: 1,
         value: '',
-        context: context,
+        context: globalContext,
         line: directive.line,
         startChar: directive.startCharacter,
         endChar: directive.endCharacter,
     });
-    index += 1; // Move to ABORT or NOABORT VALUE
-    if (tokens[index].type === 'Delimiter' && tokens[index].value === ',') {
-        log_1.default.write('DEBUG', tokens[index]);
-        index += 1; // Move past the comma;
-    }
+    globalIndex += 1; // Move to ABORT or NOABORT VALUE
     log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
-    return index;
+    if (tokens[globalIndex].type === 'Delimiter' && tokens[globalIndex].value === ',') {
+        log_1.default.write('DEBUG', tokens[globalIndex]);
+        globalIndex += 1; // Move past the comma;
+    }
+    return globalIndex;
 }
 function parseTargetDirective(tokens) {
-    log_1.default.write('DEBUG', tokens[index]);
-    let target = tokens[index];
-    index += 1; // Move to TARGET KEYWORD
-    let value = tokens[index];
-    let key = context + '.' + target.value;
+    log_1.default.write('DEBUG', tokens[globalIndex]);
+    const target = tokens[globalIndex];
+    globalIndex += 1; // Move to TARGET KEYWORD
+    const value = tokens[globalIndex];
+    const key = globalContext + '.' + target.value;
     symbolsCache.set(key, {
         id: 'Directive',
         type: 'none',
         name: target.value,
         size: 1,
         value: value.value,
-        context: context,
+        context: globalContext,
         line: target.line,
         startChar: target.startCharacter,
         endChar: target.endCharacter,
     });
-    index += 1; // Move to TARGET VALUE
+    globalIndex += 1; // Move to TARGET VALUE
     log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
-    return index;
+    return globalIndex;
 }
 function parseSourceDirective(tokens) {
     let source = '';
     let key = '';
-    index += 1; // Move past the SOURCE KEYWORD
-    while (tokens[index] && !(tokens[index].type === 'Delimiter' && tokens[index].value === '(')) {
-        log_1.default.write('DEBUG', tokens[index]);
-        source += tokens[index].value;
-        index += 1; // Move to next token
+    globalIndex += 1; // Move past the SOURCE KEYWORD
+    while (tokens[globalIndex] && !(tokens[globalIndex].type === 'Delimiter' && tokens[globalIndex].value === '(')) {
+        log_1.default.write('DEBUG', tokens[globalIndex]);
+        source += tokens[globalIndex].value;
+        globalIndex += 1; // Move to next token
     }
-    index += 1; // Move past the open parentesis
-    while (tokens[index] && !(tokens[index].type === 'Delimiter' && tokens[index].value === ')')) {
-        log_1.default.write('DEBUG', tokens[index]);
-        if (tokens[index].value === "," ||
-            tokens[index].value === "?" ||
-            tokens[index].value === "<CR><LF>")
-            index += 1; // Move past the comma;
+    globalIndex += 1; // Move past the open parentesis
+    while (tokens[globalIndex] && !(tokens[globalIndex].type === 'Delimiter' && tokens[globalIndex].value === ')')) {
+        log_1.default.write('DEBUG', tokens[globalIndex]);
+        if (tokens[globalIndex].value === "," ||
+            tokens[globalIndex].value === "?" ||
+            tokens[globalIndex].value === "<CR><LF>")
+            globalIndex += 1; // Move past the comma;
         else {
-            let func = tokens[index];
-            key = context + '.' + func.value;
+            let func = tokens[globalIndex];
+            key = globalContext + '.' + func.value;
             symbolsCache.set(key, {
                 id: 'Function',
                 type: 'none',
@@ -807,15 +1087,15 @@ function parseSourceDirective(tokens) {
                 startChar: func.startCharacter,
                 endChar: func.endCharacter,
             });
+            globalIndex += 1; // Move past the directive
             log_1.default.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`);
-            index += 1; // Move past the directive
         }
     }
-    if (tokens[index] && tokens[index].type === 'Delimiter' && tokens[index].value === ')') {
-        log_1.default.write('DEBUG', tokens[index]);
-        index += 1; // Move past the )
+    if (tokens[globalIndex] && tokens[globalIndex].type === 'Delimiter' && tokens[globalIndex].value === ')') {
+        log_1.default.write('DEBUG', tokens[globalIndex]);
+        globalIndex += 1; // Move past the )
     }
-    return index;
+    return globalIndex;
 }
 function skipNewlines(tokens, index) {
     log_1.default.write('DEBUG', 'called:');

@@ -18,13 +18,13 @@ const tokenize = (input: string) => {
             const startChar = helpers.getCursor();
             helpers.getCharacter(input);  // Consume the CR
             helpers.getCharacter(input);  // Consume the newline LF
-            tokens.push({
-                type: 'NewLine',
-                value: '<CR><LF>',
-                line: currentLine,
-                startCharacter: startChar,
-                endCharacter: helpers.getCursor()
-            });
+            //tokens.push({
+            //    type: 'NewLine',
+            //    value: '<CR><LF>',
+            //    line: currentLine,
+            //    startCharacter: startChar,
+            //    endCharacter: helpers.getCursor()
+            //});
             currentLine += 1;
             currentCharacter = 0;  // Reset character position at the start of the new line
             continue;
@@ -156,7 +156,6 @@ const tokenize = (input: string) => {
                         continue;
                     } else {
                         log.write('DEBUG', `isDataType retuned FALSE with number = ${symbol}.`)
-
                         tokens.push({
                             type: 'Delimiter',
                             value: symbol,
@@ -170,13 +169,24 @@ const tokenize = (input: string) => {
                 }
                 if (helpers.isOpeneningComment(symbol)) {
                     log.write('DEBUG', `isOpeneningComment retuned true with number = ${symbol}.`)
-                    tokens.push({
-                        type: 'Comment',
-                        value: symbol,
-                        line: currentLine,
-                        startCharacter: startChar,
-                        endCharacter: currentCharacter
-                    });
+
+                    while ((helpers.getCursor() < input.length) &&
+                           (!helpers.isClosingComment(helpers.peekCharacter(input))) &&
+                           (!helpers.isNewLine(helpers.peekCharacters(input, 2)))) {
+                        helpers.getCharacter(input);
+                        currentCharacter += 1;
+                    }
+                    if (helpers.isClosingComment(helpers.peekCharacter(input))){
+                        helpers.getCharacter(input);
+                        currentCharacter += 1;
+                    }
+                    //tokens.push({
+                    //    type: 'Comment',
+                    //    value: symbol,
+                    //    line: currentLine,
+                    //    startCharacter: startChar,
+                    //    endCharacter: currentCharacter
+                    //});
                     log.write('DEBUG', `isOpeneningComment Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
                     continue;
                 }

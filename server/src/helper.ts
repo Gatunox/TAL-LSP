@@ -79,7 +79,7 @@ const DATA_TYPES = ["STRING",
     "INT",
     "FIXED",
     "REAL",
-    "UNSIGNED", 
+    "UNSIGNED",
 ]
 /*********************************************************************************************************************************/
 /****************************************************** STANDAR FUNCIOTNS  **********************************************************/
@@ -388,7 +388,7 @@ export const isUnsigned = (word: string): boolean => {
     return retVal;
 }
 export const isFixed = (word: string): boolean => {
-    const retVal = 'UNSIGNED' === word.toUpperCase();
+    const retVal = 'FIXED' === word.toUpperCase();
     log.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`)
     return retVal;
 }
@@ -545,7 +545,7 @@ export const isSpecialCharacter = (input: string): number => {
             return symbol.length;
         }
     }
-    log.write('DEBUG', `returned "${0}"}, at ${cursor}`)
+    log.write('DEBUG', `returned 0, at ${cursor}`)
     return 0;
 }
 

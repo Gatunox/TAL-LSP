@@ -433,7 +433,7 @@ const isUnsigned = (word) => {
 };
 exports.isUnsigned = isUnsigned;
 const isFixed = (word) => {
-    const retVal = 'UNSIGNED' === word.toUpperCase();
+    const retVal = 'FIXED' === word.toUpperCase();
     log_1.default.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`);
     return retVal;
 };
@@ -609,7 +609,7 @@ const isSpecialCharacter = (input) => {
             return symbol.length;
         }
     }
-    log_1.default.write('DEBUG', `returned "${0}"}, at ${cursor}`);
+    log_1.default.write('DEBUG', `returned 0, at ${cursor}`);
     return 0;
 };
 exports.isSpecialCharacter = isSpecialCharacter;
