@@ -26,22 +26,24 @@ export type SymbolEntry = {
 }
 
 export type ASTNode =
+    | { type: 'Literal'; value: string }
+    | { type: 'Define'; value: string }
     | { type: 'Constant'; value: string }
     | { type: 'ConstantArray'; elements: ASTNode[] }
     | { type: 'RepetitionConstantArray'; repetitionFactor: number, sequence: ASTNode }
-    | { type: 'Identifier'; name: string }
     | { type: 'UnaryExpression'; operator: string; argument: ASTNode }
     | { type: 'BinaryExpression'; operator: string; left: ASTNode; right: ASTNode }
     | { type: 'AssignmentExpression'; operator: string; left: ASTNode; right: ASTNode }
-    | { type: 'FunctionCall'; name: string; arguments: ASTNode[] }
-    | { type: "Variable"; dataType:string, name: string }
+    | { type: 'FunctionCall'; name: string; arguments: ASTNode[]}
+    | { type: "Variable"; dataType?:string, name: string }
     | { type: "Filler"; fillerType: string, size: string }
-    | { type: "Array"; dataType:string, name: string; bounds?: { lower: number; upper: number } }
+    | { type: "Array"; dataType:string, name: string; bounds?: { lower: number; upper: number } }    
     | { type: "DefinitionStructure" | "TemplateStructure" | "ReferralStructure";
         name: string; indirectionType?: "None" | "Indirect" | "ExtendedIndirect";
         bounds?: { lower: number; upper: number };
         structureLayout?: ASTNode[];
-        referral?: string };
+        referral?: string }
+    | { type: 'PointerInitialization'; reference: string; arrayIndex?: ASTNode; shiftOperation?: string; shiftAmount?: string; pointerValue?: string };
 
 
 let globalContext: string = 'Global';
@@ -49,6 +51,64 @@ let globalIndex: number = 0;
 let symbolsCache = new Map<string, SymbolEntry>();
 let literals = new Set<string>();
 let defines = new Set<string>();
+
+export function printAllLiterals(){
+    log.write('DEBUG', 'called:');    
+    
+    literals.forEach((literal) => {
+        log.write('DEBUG', literal);
+    });
+}
+
+export function printAllDefines(){
+    log.write('DEBUG', 'called:');
+
+    defines.forEach((defines) => {
+        log.write('DEBUG', defines);
+    });
+}
+
+function searchLiteral(context: string, identifier: string): boolean {
+    log.write('DEBUG', 'called:');
+
+    const specificContextLiteral = `${context}.${identifier}`;
+    const globalContextLiteral = `Global.${identifier}`;
+
+    // Check if the literal exists in the specific context
+    if (literals.has(specificContextLiteral)) {
+        return true;
+    }
+
+    // If not found, check in the Global context
+    if (literals.has(globalContextLiteral)) {
+        return true;
+    }
+
+    // Literal not found
+    return false;
+}
+
+
+function searchDefine(context: string, identifier: string): boolean {
+    log.write('DEBUG', 'called:');
+
+    const specificContextDefine = `${context}.${identifier}`;
+    const globalContextDefine = `Global.${identifier}`;
+
+    // Check if the define exists in the specific context
+    if (defines.has(specificContextDefine)) {
+        return true;
+    }
+
+    // If not found, check in the Global context
+    if (defines.has(globalContextDefine)) {
+        return true;
+    }
+
+    // Literal not found
+    return false;
+}
+
 
 function addToSymbolCache(context: string, name: string, entry: SymbolEntry): void {
     const key = `${context}.${name}`;
@@ -58,6 +118,10 @@ function addToSymbolCache(context: string, name: string, entry: SymbolEntry): vo
 
 function clearCache(): void {
     symbolsCache.clear();;
+}
+
+function throwUnexpectedError(tokens: Token[], index: number): never {
+    throw new Error(`Unexpected token '${tokens[index].value}' at index ${index} on line '${tokens[index].line}'`);
 }
 
 function throwValueError(tokens: Token[], index: number, expectedKeyword: string): never {
@@ -72,15 +136,40 @@ function throwTypeError(tokens: Token[], index: number, expectedKeyword: string)
     );
 }
 
+
+function throwDifferentValueError(tokens: Token[], index: number, forbiddenValue: string): never {
+    throw new Error(
+        `Invalid value '${forbiddenValue}' at index ${index}', on line '${tokens[index].line}'`
+    );
+}
+
+function throwDifferentTypeError(tokens: Token[], index: number, forbiddenValue: string): never {
+    throw new Error(
+        `Invalid value '${forbiddenValue}' at index ${index}', on line '${tokens[index].line}'`
+    );
+}
+
 function requireValue(tokens: Token[], index: number, expectedValue: string): void {
     if (tokens[index].value !== expectedValue) {
         throwValueError(tokens, index, expectedValue);
     }
 }
 
+function requireDiffentValue(tokens: Token[], index: number, forbiddenValue: string): void {
+    if (tokens[index].value === forbiddenValue) {
+        throwDifferentValueError(tokens, index, forbiddenValue);
+    }
+}
+
 function requireType(tokens: Token[], index: number, expectedType: string): void {
     if (tokens[index].type !== expectedType) {
         throwTypeError(tokens, index, expectedType);
+    }
+}
+
+function requireDiffentType(tokens: Token[], index: number, forbiddenValue: string): void {
+    if (tokens[index].type === forbiddenValue) {
+        throwDifferentTypeError(tokens, index, forbiddenValue);
     }
 }
 
@@ -414,11 +503,9 @@ function parseDeclarations(tokens: Token[]) {
     // Adjust base position based on indirection. 
     // if indirection we only skip the ident otherwise both
     const basePosition = globalIndex + (isIndirection ? 2 : 1);
-
     const hasBounds = checkBounds(tokens, basePosition);
-    const BOFFSET = hasBounds ? 5 : 0;
-
-    const isReadOnly = checkReadOnly(tokens, basePosition + BOFFSET);
+    const offset = hasBounds ? 5 : 0;
+    const isReadOnly = checkReadOnly(tokens, basePosition + offset);
 
     log.write('DEBUG', `isArray: ${hasBounds}`);
     log.write('DEBUG', `isReadOnly: ${isReadOnly}`);
@@ -431,7 +518,7 @@ function parseDeclarations(tokens: Token[]) {
         parseArray(tokens, constType.dataType);
     } else if (isIndirection) {
         log.write('DEBUG', 'isIndirection: true');
-        // parseIndirection(tokens, type);
+        parseIndirection(tokens, constType.dataType);
     } else {
         parseVariable(tokens, constType.dataType);
     }
@@ -448,7 +535,7 @@ function parseStructure(tokens: Token[]): { AST: ASTNode, index: number } {
     if (tokens[globalIndex].value === ".") {
         indirectionType = "Indirect";
         globalIndex++;
-    } else if (tokens[globalIndex].value === ".EXT ") {
+    } else if (tokens[globalIndex].value === ".EXT") {
         indirectionType = "ExtendedIndirect";
         globalIndex++;
     }
@@ -515,9 +602,7 @@ function parseStructureVariable(tokens: Token[], index: number): { AST: ASTNode,
     const identifier = tokens[index].value;
     index++;
 
-    if (tokens[index].value !== ";") {
-        throw new Error(`Expected ';' after variable declaration at index ${index}`);
-    }
+    requireValue(tokens, index, ";")
     index++; // Move past the semicolon
 
     addToSymbolCache(globalContext, identifier, {
@@ -655,9 +740,7 @@ function parseStructureLayout(tokens: Token[], index: number): { AST: ASTNode[],
         index = element.index;
     }
 
-    if (tokens[index].value !== "END") {
-        throw new Error(`Expected 'END' at index ${index}, but found '${tokens[index].value}' on line '${tokens[index].line}'`);
-    }
+    requireValue(tokens, index, "END")
     index++;
 
     return { AST: layoutElements, index };
@@ -699,7 +782,7 @@ function parseStructureElement(tokens: Token[], index: number): { AST: ASTNode, 
             index = fillerResult.index; 
             break;
         default:
-            throw new Error(`Unexpected element ${token.value}, at index ${index} on line ${token.line}`);
+            throwUnexpectedError(tokens, index);
     }
 
     return { AST: element, index };
@@ -727,63 +810,6 @@ function parseFiller(tokens: Token[], index: number): { AST: ASTNode, index: num
 }
 
 
-function parseVariable(tokens: Token[], type: string) {
-    log.write('DEBUG', 'called:');
-
-    const startline = tokens[globalIndex].line;
-    const startChar = tokens[globalIndex].startCharacter;
-
-    let endline = tokens[globalIndex].line;
-    let endChar = tokens[globalIndex].endCharacter;
-    let lowerBoud = 0;
-    let upperBound = 0;
-    let initialization = null;
-    do {
-        globalIndex = skipComma(tokens, globalIndex); // Skip comma for multiple variables
-
-        const ident = parseIdent(tokens);
-
-        if (!checkForValue(tokens, ";") && !checkForValue(tokens, ':=')) {
-            log.write('ERROR', 'failed.');
-            throw new Error(`Expected ';' or ':=' at line ${tokens[globalIndex].line}, but found '${tokens[globalIndex].value}' on line '${tokens[globalIndex].line}'`);
-        }
-
-        if (tokens[globalIndex].value === ':=') {
-            log.write('DEBUG', tokens[globalIndex]);
-            globalIndex += 1; // Skip :=
-
-            const expressionResult = parseArithmeticExpression(tokens, globalIndex);
-            log.write('DEBUG', JSON.stringify(expressionResult));
-
-            initialization = expressionResult.AST;
-            globalIndex = expressionResult.index;
-        }
-
-        endline = tokens[globalIndex - 1].line;
-        endChar = tokens[globalIndex - 1].endCharacter;
-
-        const key = globalContext + '.' + ident;
-        const line = '[' + startline.toString() + ':' + endline.toString() + ']';
-        const size = upperBound - lowerBoud + 1;
-        symbolsCache.set(key, {
-            id: 'Variable',
-            type: type,
-            name: ident,
-            size: size,
-            value: initialization || "",
-            context: globalContext,
-            line: line,
-            startChar: startChar,
-            endChar: endChar + 1  // +1 account for , o ;
-        });
-        log.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`)
-
-    } while (globalIndex < tokens.length && checkForValue(tokens, ',')); // fond a comma, let's continue
-
-    if (!checkForValue(tokens, ";")) {
-        log.write('ERROR', tokens[globalIndex]); //NO NO NO TODO: see that to do.
-    }
-}
 
 
 function parseArray(tokens: Token[], type: string) {
@@ -799,22 +825,23 @@ function parseArray(tokens: Token[], type: string) {
     do {
         globalIndex = skipComma(tokens, globalIndex); // Skip comma for multiple variables
 
+        requireType(tokens, globalIndex, "Identifier")
         const ident = parseIdent(tokens);
         log.write('DEBUG', `ident: ${ident}`);
 
         const isIndirection = checkForTypeAt(tokens, globalIndex, 'Indirection');
-        const IOFFSET = isIndirection ? 1 : 0;
+        const indOffset = isIndirection ? 1 : 0;
 
-        const hasBounds = checkBounds(tokens, globalIndex + IOFFSET);
-        const BOFFSET = hasBounds ? 5 : 0;
+        const hasBounds = checkBounds(tokens, globalIndex + indOffset);
+        const boundOffset = hasBounds ? 5 : 0;
 
-        const isReadOnly = checkReadOnly(tokens, globalIndex + BOFFSET);
-        const ROFFSET = isReadOnly ? 2 : 0;
+        const isReadOnly = checkReadOnly(tokens, globalIndex + boundOffset);
+        const rdOnlyOffset = isReadOnly ? 2 : 0;
 
         const lowerBound = hasBounds ? Number(tokens[globalIndex + 1].value) : null;
         const upperBound = hasBounds ? Number(tokens[globalIndex + 3].value) : null;
 
-        globalIndex += BOFFSET + ROFFSET; // Skip [X:XX] or = 'P' if exists
+        globalIndex += boundOffset + rdOnlyOffset; // Skip [X:XX] or = 'P' if exists
 
         if (!checkForValue(tokens, ";") && !checkForValue(tokens, ':=')) {
             log.write('ERROR', 'failed.');
@@ -937,6 +964,143 @@ function parseConstant(tokens: Token[], index: number): { constantNode: ASTNode,
     throw new Error(`Expected constant at index ${index}, found '${token.value} but found '${tokens[index].value}' on line '${tokens[index].line}'`);
 }
 
+
+function parseIndirection(tokens: Token[], type: string) {
+    log.write('DEBUG', 'called:');
+
+    const startline = tokens[globalIndex].line;
+    const startChar = tokens[globalIndex].startCharacter;
+
+    let endline = tokens[globalIndex].line;
+    let endChar = tokens[globalIndex].endCharacter;
+    let initialization = null;
+
+    do {
+        globalIndex = skipComma(tokens, globalIndex); // Skip comma for multiple variables
+
+        requireType(tokens, globalIndex, "Identifier")
+        const ident = parseIdent(tokens);
+
+        // Determine indirection type (. or .EXT) or None
+        let indirectionType: "None" | "Indirect" | "ExtendedIndirect" = "None";
+        if (tokens[globalIndex].value === ".") {
+            indirectionType = "Indirect";
+            globalIndex++;
+        } else if (tokens[globalIndex].value === ".EXT") {
+            indirectionType = "ExtendedIndirect";
+            globalIndex++;
+        }
+
+        if (!checkForValue(tokens, ";") && !checkForValue(tokens, ':=')) {
+            log.write('ERROR', 'failed.');
+            throw new Error(`Expected ';' or ':=' at line ${tokens[globalIndex].line}, but found '${tokens[globalIndex].value}' on line '${tokens[globalIndex].line}'`);
+        }
+
+        if (tokens[globalIndex].value === ':=') {
+            log.write('DEBUG', tokens[globalIndex]);
+            globalIndex += 1; // Skip :=
+
+            if (globalContext === 'Global'){
+                const expressionResult = parsePointerInitialization(tokens, globalIndex);
+                initialization = expressionResult.AST;
+                globalIndex = expressionResult.index;
+            } else {
+                const expressionResult = parseExpression(tokens, globalIndex);
+                initialization = expressionResult.AST;
+                globalIndex = expressionResult.index;
+            }
+        }
+
+        endline = tokens[globalIndex - 1].line;
+        endChar = tokens[globalIndex - 1].endCharacter;
+
+        const key = globalContext + '.' + ident;
+        const line = '[' + startline.toString() + ':' + endline.toString() + ']';
+        const size = 1;
+        symbolsCache.set(key, {
+            id: 'Variable',
+            type: type,
+            name: ident,
+            size: size,
+            value: initialization || "",
+            context: globalContext,
+            line: line,
+            startChar: startChar,
+            endChar: endChar + 1  // +1 account for , o ;
+        });
+        log.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`)
+
+    } while (globalIndex < tokens.length && checkForValue(tokens, ',')); // fond a comma, let's continue
+
+    if (!checkForValue(tokens, ";")) {
+        log.write('ERROR', tokens[globalIndex]); //NO NO NO TODO: see that to do.
+    }
+}
+
+
+function parseVariable(tokens: Token[], type: string) {
+    log.write('DEBUG', 'called:');
+
+    const startline = tokens[globalIndex].line;
+    const startChar = tokens[globalIndex].startCharacter;
+
+    let endline = tokens[globalIndex].line;
+    let endChar = tokens[globalIndex].endCharacter;
+    let initialization = null;
+    do {
+        globalIndex = skipComma(tokens, globalIndex); // Skip comma for multiple variables
+
+        const ident = parseIdent(tokens);
+
+        if (!checkForValue(tokens, ";") && !checkForValue(tokens, ':=')) {
+            log.write('ERROR', 'failed.');
+            throw new Error(`Expected ';' or ':=' at line ${tokens[globalIndex].line}, but found '${tokens[globalIndex].value}' on line '${tokens[globalIndex].line}'`);
+        }
+
+        if (tokens[globalIndex].value === ':=') {
+            log.write('DEBUG', tokens[globalIndex]);
+            globalIndex += 1; // Skip :=
+
+
+            if (globalContext === 'Global'){
+                const expressionResult = parseVariableInitialization(tokens, globalIndex);
+                if (expressionResult){
+                    initialization = expressionResult.AST;
+                    globalIndex = expressionResult.index;
+                }
+            } else {
+                const expressionResult = parseExpression(tokens, globalIndex);
+                initialization = expressionResult.AST;
+                globalIndex = expressionResult.index;
+            }
+        }
+
+        endline = tokens[globalIndex - 1].line;
+        endChar = tokens[globalIndex - 1].endCharacter;
+
+        const key = globalContext + '.' + ident;
+        const line = '[' + startline.toString() + ':' + endline.toString() + ']';
+        const size = 1;
+        symbolsCache.set(key, {
+            id: 'Variable',
+            type: type,
+            name: ident,
+            size: size,
+            value: initialization || "",
+            context: globalContext,
+            line: line,
+            startChar: startChar,
+            endChar: endChar + 1  // +1 account for , o ;
+        });
+        log.write('DEBUG', `symbolTable Added = ${JSON.stringify(Array.from(symbolsCache.entries()).pop())}.`)
+
+    } while (globalIndex < tokens.length && checkForValue(tokens, ',')); // fond a comma, let's continue
+
+    if (!checkForValue(tokens, ";")) {
+        log.write('ERROR', tokens[globalIndex]); //NO NO NO TODO: see that to do.
+    }
+}
+
 // Helper: Skip commas and newlines between elements
 function skipCommaAndNewlines(tokens: Token[], index: number): number {
     if (tokens[index]?.value === ',') {
@@ -1019,8 +1183,87 @@ function parseDataType(tokens: Token[], index: number): { dataType: string, inde
     return { dataType: retType, index };
 }
 
+function parsePointerInitialization(tokens: Token[], index: number): { AST: ASTNode, index: number } {
+    log.write('DEBUG', 'called:');
+    
+    let reference: string;
+    let arrayIndex: ASTNode | undefined;
+    let shiftOperation: string | undefined;
+    let shiftAmount: string | undefined;
+    let pointerValue: string | undefined;
 
-function parseArithmeticExpression(tokens: Token[], index: number, precedence = 0): { AST: ASTNode, index: number } {
+    // Check if the initialization starts with '@' (address reference)
+    if (tokens[index].value === '@') {
+        index++; // Move past '@'
+
+        // Expect an identifier after '@'
+        requireType(tokens, index, "Identifier");
+        reference = tokens[index].value;
+        index++;
+
+        // Check if it's referencing an array element (e.g., @array[3])
+        if (tokens[index].value === '[') {
+            index++;
+            const expressionResult = parseExpression(tokens, index);
+            arrayIndex = expressionResult.AST;
+            index = expressionResult.index;
+
+            requireValue(tokens, index, ']');
+            index++;
+        }
+
+        // Check for optional bit-shift operations (e.g., '<<' 1)
+        if (tokens[index]?.value === '<<' || tokens[index]?.value === '>>') {
+            shiftOperation = tokens[index].value;
+            index++;
+
+            requireType(tokens, index, "Number");
+            shiftAmount = tokens[index].value;
+            index++;
+        }
+
+    } else {
+        // Handle direct assignment without '@'
+        requireType(tokens, index, "Identifier");
+        reference = tokens[index].value;
+        index++;
+
+        // Check if it's referencing an array element (e.g., a[0])
+        if (tokens[index].value === '[') {
+            index++;
+            const expressionResult = parseExpression(tokens, index);
+            arrayIndex = expressionResult.AST;
+            index = expressionResult.index;
+
+            requireValue(tokens, index, ']');
+            index++;
+        }
+
+        // Check for an octal value assignment (like `%100000`)
+        if (tokens[index].value.startsWith('%')) {
+            requireType(tokens, index, "Number");
+            pointerValue = tokens[index].value; // Capture octal value
+            index++;
+        }
+    }
+
+    return {
+        AST: {
+            type: 'PointerInitialization',
+            reference,
+            arrayIndex,
+            shiftOperation,
+            shiftAmount,
+            pointerValue
+        },
+        index
+    };
+}
+
+
+function parseExpression(tokens: Token[], index: number, precedence = 0): { AST: ASTNode, index: number } {
+    log.write('DEBUG', 'called:');
+
     // Parse the left side of the expression, starting with unary or primary
     let result = precedence === 0 ? parseUnary(tokens, index) : parsePrimary(tokens, index);
     index = result.index;
@@ -1033,7 +1276,7 @@ function parseArithmeticExpression(tokens: Token[], index: number, precedence = 
         index++;
 
         // Recursively parse the right operand at the next higher precedence level
-        const right = parseArithmeticExpression(tokens, index, operatorPrecedence + 1);
+        const right = parseExpression(tokens, index, operatorPrecedence + 1);
         index = right.index;
 
         // Construct the BinaryExpression node with left and right operands
@@ -1054,6 +1297,8 @@ function parseArithmeticExpression(tokens: Token[], index: number, precedence = 
 
 // New function to handle unary operators like '+a' or '-a'
 function parseUnary(tokens: Token[], index: number): { AST: ASTNode, index: number } {
+    log.write('DEBUG', 'called:');
+
     const token = tokens[index];
 
     // Check for unary '+' or '-'
@@ -1079,18 +1324,24 @@ function parseUnary(tokens: Token[], index: number): { AST: ASTNode, index: numb
 }
 
 
-function parsePrimary(tokens: Token[], index: number): { AST: ASTNode, index: number } {
+function parseVariableInitialization(tokens: Token[], index: number, handelError: boolean = true): { AST: ASTNode, index: number} | undefined {
+    log.write('DEBUG', 'called:');
+
     const token = tokens[index];
 
-    if (token.type === 'Number' || token.type === 'Literal' ||
-        (token.type === 'Identifier' && literals.has(token.value))) {
+    if ((token.type === 'Identifier' && searchLiteral(globalContext, token.value))) {
         index++;
-        return { AST: { type: 'Constant', value: token.value }, index };
+        return { AST: { type: 'Literal', value: token.value }, index };
     }
 
-    if (token.type === 'Identifier') {
+    if ((token.type === 'Identifier' && searchDefine(globalContext, token.value))) {
         index++;
-        return { AST: { type: 'Identifier', name: token.value }, index };
+        return { AST: { type: 'Define', value: token.value }, index };
+    }    
+
+    if (token.type === 'Number') {
+        index++;
+        return { AST: { type: 'Constant', value: token.value }, index };
     }
 
     if (token.type === 'Function') {
@@ -1099,19 +1350,42 @@ function parsePrimary(tokens: Token[], index: number): { AST: ASTNode, index: nu
 
     if (token.value === '(') {
         index++;
-        const expressionResult = parseArithmeticExpression(tokens, index, 9);
+        const expressionResult = parseExpression(tokens, index, 9);
         index = expressionResult.index;
-        if (tokens[index].value !== ')') {
-            throw new Error(`Expected ')' at index ${index}, but found '${tokens[index].value}' on line '${tokens[index].line}'`);
-        }
+        requireValue(tokens, index, ")")
         index++;
         return { AST: expressionResult.AST, index };
     }
 
-    throw new Error(`Unexpected token '${token.value}' at index ${index}`);
+    if (handelError){
+        throwUnexpectedError(tokens, index);
+    }
+
+    return undefined
+}
+
+
+function parsePrimary(tokens: Token[], index: number): { AST: ASTNode, index: number } {
+    log.write('DEBUG', 'called:');
+
+    const token = tokens[index];
+    const result = parseVariableInitialization(tokens, index, false);
+    
+    if (result && 'AST' in result) {
+        return result
+    } else {
+        if (token.type === 'Identifier') {
+            index++;
+            return { AST: { type: 'Variable', name: token.value }, index };
+        }    
+    }
+
+    throwUnexpectedError(tokens, index);
 }
 
 function parseFunctionCall(tokens: Token[], index: number): { AST: ASTNode, index: number } {
+    log.write('DEBUG', 'called:');
+
     const functionName = tokens[index].value; // Assume function name token
     index++; // Move past function name
 
@@ -1124,7 +1398,7 @@ function parseFunctionCall(tokens: Token[], index: number): { AST: ASTNode, inde
 
     // Parse each argument
     while (tokens[index].value !== ')') {
-        const argumentResult = parseArithmeticExpression(tokens, index, 9); // Parse each argument as an expression
+        const argumentResult = parseExpression(tokens, index, 9); // Parse each argument as an expression
         argumentsList.push(argumentResult.AST);
         index = argumentResult.index;
 
@@ -1161,6 +1435,8 @@ const precedenceMap: Record<string, number> = {
 };
 
 function getPrecedence(token: Token): number {
+    log.write('DEBUG', 'called:');
+    
     return precedenceMap[token.value] ?? -1;
 }
 
@@ -1312,6 +1588,8 @@ function parseTargetDirective(tokens: Token[]) {
 }
 
 function parseSourceDirective(tokens: Token[]) {
+    log.write('DEBUG', 'called:');
+
     let source = '';
     let key = '';
 
@@ -1366,6 +1644,8 @@ function skipNewlines(tokens: Token[], index: number): number {
 }
 
 function getConstantArrayLength(ast: ASTNode | null): number {
+    log.write('DEBUG', 'called:');
+
     let totalLength = 0;
 
     // Check if ast is null or not of type ConstantArray

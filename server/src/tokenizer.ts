@@ -2,298 +2,183 @@ import * as helpers from './helper';
 import { Token } from './helper';
 import log from './log';
 
+// Helper function to add tokens to the list and log them
+const addToken = (tokens: Token[], type: string, value: string, line: number, startChar: number, endChar: number) => {
+    const token = { type, value, line, startCharacter: startChar, endCharacter: endChar };
+    tokens.push(token);
+    log.write('DEBUG', `${type} Found = ${JSON.stringify(token)}.`);
+};
+
+// Handle newlines
+const handleNewline = (input: string, tokens: Token[], currentLine: number, currentCharacter: number) => {
+    helpers.getCharacter(input); // Consume CR
+    helpers.getCharacter(input); // Consume LF
+    return { newLine: currentLine + 1, newCharPos: 0 };
+};
+
+// Handle numbers with base and suffix
+const handleNumber = (input: string, tokens: Token[], currentLine: number, currentCharacter: number) => {
+    const startChar = currentCharacter;
+    let base = '';
+    let number = '';
+    let suffix = '';
+    const baseLength = helpers.isNumericBase(input);
+
+    if (baseLength) {
+        base = helpers.getCharacters(input, baseLength);
+        currentCharacter += base.length;
+    }
+
+    number = helpers.getCharacter(input);
+    currentCharacter++;
+
+    while (helpers.isNumber(helpers.peekCharacter(input), base) ||
+           (helpers.isDot(helpers.peekCharacter(input)) && helpers.isNumber(helpers.peekCharacterAt(input, 1)))) {
+        number += helpers.getCharacter(input);
+        currentCharacter++;
+    }
+
+    const suffixLength = helpers.isNumericSuffix(input);
+    if (suffixLength) {
+        suffix = helpers.getCharacters(input, suffixLength);
+        currentCharacter += suffix.length;
+    }
+
+    addToken(tokens, 'Number', base + number + suffix, currentLine, startChar, currentCharacter);
+    return currentCharacter;
+};
+
+// Handle identifiers and keywords
+const handleIdentifierOrKeyword = (input: string, tokens: Token[], currentLine: number, currentCharacter: number) => {
+    const startChar = currentCharacter;
+    let symbol = helpers.getCharacter(input);
+    currentCharacter++;
+
+    while (helpers.isLetter(helpers.peekCharacter(input), true) || helpers.isNumber(helpers.peekCharacter(input))) {
+        symbol += helpers.getCharacter(input);
+        currentCharacter++;
+    }
+
+    if (helpers.isKeyword(symbol)) {
+        const type = helpers.isDataType(symbol) ? 'DataType' : (helpers.isOperator(symbol) ? 'Operator' : 'Keyword');
+        addToken(tokens, type, symbol, currentLine, startChar, currentCharacter);
+    } else {
+        addToken(tokens, 'Identifier', symbol, currentLine, startChar, currentCharacter);
+    }
+
+    return currentCharacter;
+};
+
+// Handle special characters and operators
+const handleSpecialCharacter = (input: string, tokens: Token[], currentLine: number, currentCharacter: number) => {
+    const startChar = currentCharacter;
+    const specialCharLength = helpers.isSpecialCharacter(input);
+    const symbol = helpers.getCharacters(input, specialCharLength);
+    currentCharacter += symbol.length;
+
+    if (helpers.isOpeneningComment(symbol)) {
+        while (!helpers.isClosingComment(helpers.peekCharacter(input)) && 
+               !helpers.isNewLine(helpers.peekCharacters(input, 2))) {
+            helpers.getCharacter(input);
+            currentCharacter++;
+        }
+        if (helpers.isClosingComment(helpers.peekCharacter(input))) {
+            helpers.getCharacter(input);
+            currentCharacter++;
+        }
+        return currentCharacter;
+    }
+
+    if (helpers.isSingleLineComment(symbol)) {
+        while (!helpers.isEmpty(helpers.peekCharacter(input)) && 
+               !helpers.isNewLine(helpers.peekCharacters(input, 2))) {
+            helpers.getCharacter(input);
+            currentCharacter++;
+        }
+        return currentCharacter;
+    }
+
+    if (helpers.isCompilerDirectiveLine(symbol) && startChar === 0) {
+        addToken(tokens, 'DirectiveLine', symbol, currentLine, startChar, currentCharacter);
+        return currentCharacter;
+    }
+
+    if (helpers.isBaseAddressSymbol(symbol)) {
+        const type = helpers.isReadOnlyArray(symbol) ? "ReadOnlyArray" : "BaseAddressEquivalence";
+        addToken(tokens, type, symbol, currentLine, startChar, currentCharacter);
+        return currentCharacter;
+    }
+
+    if (helpers.isIndirection(symbol)) {
+        addToken(tokens, 'Indirection', symbol.trim(), currentLine, startChar, currentCharacter);
+        return currentCharacter;
+    }
+
+    if (helpers.isDelimiter(symbol)) {
+        if (helpers.isQuote(symbol)) {
+            let string = '';
+            while (helpers.isNotQuote(helpers.peekCharacter(input))) {
+                string += helpers.getCharacter(input);
+            }
+            helpers.getCharacter(input); // Consume the closing quote
+            currentCharacter++;
+            addToken(tokens, 'String', string, currentLine, startChar, currentCharacter);
+        } else {
+            addToken(tokens, 'Delimiter', symbol, currentLine, startChar, currentCharacter);
+        }
+        return currentCharacter;
+    }
+
+    if (helpers.isOperator(symbol)) {
+        addToken(tokens, 'Operator', symbol, currentLine, startChar, currentCharacter);
+        return currentCharacter;
+    }
+
+    return currentCharacter;
+};
+
+// Main tokenize function
 const tokenize = (input: string) => {
-
     let tokens: Token[] = [];
-    let currentLine = 1;         // Track the current line number
-    let currentCharacter = 0;    // Track the current character position within the line
-
+    let currentLine = 1;
+    let currentCharacter = 0;
     helpers.resetCursor();
 
     while (helpers.getCursor() < input.length) {
-        const startCursor = helpers.getCursor();  // Save the cursor position for later
+        const startCursor = helpers.getCursor();
+        const startChar = currentCharacter;
 
-        // Handle newlines (advance to the next line and reset character position)
         if (helpers.isNewLine(helpers.peekCharacters(input, 2))) {
-            const startChar = helpers.getCursor();
-            helpers.getCharacter(input);  // Consume the CR
-            helpers.getCharacter(input);  // Consume the newline LF
-            //tokens.push({
-            //    type: 'NewLine',
-            //    value: '<CR><LF>',
-            //    line: currentLine,
-            //    startCharacter: startChar,
-            //    endCharacter: helpers.getCursor()
-            //});
-            currentLine += 1;
-            currentCharacter = 0;  // Reset character position at the start of the new line
+            const { newLine, newCharPos } = handleNewline(input, tokens, currentLine, currentCharacter);
+            currentLine = newLine;
+            currentCharacter = newCharPos;
             continue;
         }
 
         if (helpers.isNumericBase(input) || helpers.isNumber(helpers.peekCharacter(input))) {
-
-            const startChar = currentCharacter;
-
-            let base = '';
-            let number = '';
-            let suffix = '';
-            let baseLength = helpers.isNumericBase(input);
-
-            if (baseLength) {
-                base = helpers.getCharacters(input, baseLength);
-                currentCharacter += base.length;
-                log.write('DEBUG', `isSpecialCharacter retuned true with symbol = ${base}.`)
-            }
-
-            number = helpers.getCharacter(input);
-            currentCharacter += 1;
-            log.write('DEBUG', `isNumber retuned true with number = ${number}.`)
-
-            while (helpers.getCursor() < input.length &&
-                helpers.isNumber(helpers.peekCharacter(input), base) ||
-                (helpers.isDot(helpers.peekCharacter(input)) &&
-                    helpers.isNumber(helpers.peekCharacterAt(input, 1)))) {
-                number += helpers.getCharacter(input);
-                currentCharacter += 1;
-            }
-
-            let suffixLength = helpers.isNumericSuffix(input);
-
-            if (suffixLength) {
-                suffix = helpers.getCharacters(input, suffixLength);
-                currentCharacter += base.length;
-                log.write('DEBUG', `isSpecialCharacter retuned true with symbol = ${base}.`)
-            }
-
-            // TODO: need to parse subfix D, F, %D and %F
-
-            tokens.push({
-                type: 'Number',
-                value: base + number + suffix,
-                line: currentLine,
-                startCharacter: startChar,
-                endCharacter: currentCharacter
-            });
-            log.write('DEBUG', `Number Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
+            currentCharacter = handleNumber(input, tokens, currentLine, currentCharacter);
             continue;
         }
 
         if (helpers.isLetter(helpers.peekCharacter(input), true)) {
-            const startChar = currentCharacter;
-            let symbol = helpers.getCharacter(input);
-            currentCharacter += 1;
-            log.write('DEBUG', `isLetter retuned true with symbol = ${symbol}.`)
-
-            while (helpers.getCursor() < input.length &&
-                  (helpers.isLetter(helpers.peekCharacter(input), true) ||
-                   helpers.isNumber(helpers.peekCharacter(input)))) {
-                symbol += helpers.getCharacter(input);
-                currentCharacter += 1;
-            }
-
-            if (helpers.isKeyword(symbol)) {
-                if (helpers.isDataType(symbol)) {
-                    tokens.push({
-                        type: 'DataType',
-                        value: symbol,
-                        line: currentLine,
-                        startCharacter: startChar,
-                        endCharacter: currentCharacter
-                    });
-                }
-                else
-                    if (helpers.isOperator(symbol)) {
-                        tokens.push({
-                            type: 'Operator',
-                            value: symbol,
-                            line: currentLine,
-                            startCharacter: startChar,
-                            endCharacter: currentCharacter
-                        });
-                    }
-                    else {
-                        tokens.push({
-                            type: 'Keyword',
-                            value: symbol,
-                            line: currentLine,
-                            startCharacter: startChar,
-                            endCharacter: currentCharacter
-                        });
-                    }
-            } else {
-                tokens.push({
-                    type: 'Identifier',
-                    value: symbol,
-                    line: currentLine,
-                    startCharacter: startChar,
-                    endCharacter: currentCharacter
-                });
-            }
-            log.write('DEBUG', `Letter Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
+            currentCharacter = handleIdentifierOrKeyword(input, tokens, currentLine, currentCharacter);
             continue;
         }
 
-        let specialCharLength = 0;
-        if (specialCharLength = helpers.isSpecialCharacter(input)) {
-            const startChar = currentCharacter;
-            let symbol = helpers.getCharacters(input, specialCharLength);
-            currentCharacter += symbol.length;
-            log.write('DEBUG', `isSpecialCharacter retuned true with symbol = ${symbol}.`)
-
-            if (symbol) {
-                if (symbol === ".") {
-                    if (helpers.isDataType(helpers.getPreviousTokenValue(tokens))) {
-                        log.write('DEBUG', `isDataType retuned true with number = ${symbol}.`)
-
-                        tokens.push({
-                            type: 'Indirection',
-                            value: symbol,
-                            line: currentLine,
-                            startCharacter: startChar,
-                            endCharacter: currentCharacter
-                        });
-                        log.write('DEBUG', `Indirection Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
-                        continue;
-                    } else {
-                        log.write('DEBUG', `isDataType retuned FALSE with number = ${symbol}.`)
-                        tokens.push({
-                            type: 'Delimiter',
-                            value: symbol,
-                            line: currentLine,
-                            startCharacter: startChar,
-                            endCharacter: currentCharacter
-                        });
-                        log.write('DEBUG', `Delimiter Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
-                        continue;
-                    }
-                }
-                if (helpers.isOpeneningComment(symbol)) {
-                    log.write('DEBUG', `isOpeneningComment retuned true with number = ${symbol}.`)
-
-                    while ((helpers.getCursor() < input.length) &&
-                           (!helpers.isClosingComment(helpers.peekCharacter(input))) &&
-                           (!helpers.isNewLine(helpers.peekCharacters(input, 2)))) {
-                        helpers.getCharacter(input);
-                        currentCharacter += 1;
-                    }
-                    if (helpers.isClosingComment(helpers.peekCharacter(input))){
-                        helpers.getCharacter(input);
-                        currentCharacter += 1;
-                    }
-                    //tokens.push({
-                    //    type: 'Comment',
-                    //    value: symbol,
-                    //    line: currentLine,
-                    //    startCharacter: startChar,
-                    //    endCharacter: currentCharacter
-                    //});
-                    log.write('DEBUG', `isOpeneningComment Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
-                    continue;
-                }
-                if (helpers.isSingleLineComment(symbol)) {
-                    log.write('DEBUG', `isSingleLineComment retuned true with number = ${symbol}.`)
-
-                    tokens.push({
-                        type: 'CommentLine',
-                        value: symbol,
-                        line: currentLine,
-                        startCharacter: startChar,
-                        endCharacter: currentCharacter
-                    });
-                    log.write('DEBUG', `isSingleLineComment Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
-                    continue;
-                }
-                if (helpers.isCompilerDirectiveLine(symbol) && startChar === 0) {
-                    log.write('DEBUG', `CompilerDirective retuned true with number = ${symbol}.`)
-
-                    tokens.push({
-                        type: 'DirectiveLine',
-                        value: symbol,
-                        line: currentLine,
-                        startCharacter: startChar,
-                        endCharacter: currentCharacter
-                    });
-                    log.write('DEBUG', `Directive Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
-                    continue;
-                }
-                if (helpers.isBaseAddressSymbol(symbol)) {
-                    const type = helpers.isReadOnlyArray(symbol)
-                        ? "ReadOnlyArray"
-                        : "BaseAddressEquivalence";
-                    tokens.push({
-                        type: type,
-                        value: symbol,
-                        line: currentLine,
-                        startCharacter: startChar,
-                        endCharacter: currentCharacter
-                    });
-                    log.write('DEBUG', `Delimiter Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
-                    continue;
-                }
-                if (helpers.isIndirection(symbol)) {
-                    tokens.push({
-                        type: 'Indirection',
-                        value: symbol,
-                        line: currentLine,
-                        startCharacter: startChar,
-                        endCharacter: currentCharacter
-                    });
-                    log.write('DEBUG', `Delimiter Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
-                    continue;
-                }
-                if (helpers.isDelimiter(symbol)) {
-                    if (helpers.isQuote(symbol)){                       
-                        let string = '';
-                        while (helpers.getCursor() < input.length &&
-                               helpers.isNotQuote(helpers.peekCharacter(input))) {
-                            string += helpers.getCharacter(input);
-                        }
-                        helpers.getCharacter(input);  // Consume the second quote 
-                        currentCharacter += 1;
-                        tokens.push({
-                            type: 'String',
-                            value: string,
-                            line: currentLine,
-                            startCharacter: startChar,
-                            endCharacter: currentCharacter
-                        });
-                        log.write('DEBUG', `Delimiter Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
-                        continue;
-                    } 
-                    tokens.push({
-                        type: 'Delimiter',
-                        value: symbol,
-                        line: currentLine,
-                        startCharacter: startChar,
-                        endCharacter: currentCharacter
-                    });
-                    log.write('DEBUG', `Delimiter Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
-                    continue;
-                }
-                if (helpers.isOperator(symbol)) {
-                    tokens.push({
-                        type: 'Operator',
-                        value: symbol,
-                        line: currentLine,
-                        startCharacter: startChar,
-                        endCharacter: currentCharacter
-                    });
-                    log.write('DEBUG', `Operator Found = ${JSON.stringify(tokens[tokens.length - 1])}.`)
-                    continue;
-                }
-            }
+        if (helpers.isSpecialCharacter(input)) {
+            currentCharacter = handleSpecialCharacter(input, tokens, currentLine, currentCharacter);
+            continue;
         }
 
         if (helpers.isWhitespace(helpers.peekCharacter(input))) {
-            helpers.getCharacter(input)
-            currentCharacter += 1;  // Move to the next character
+            helpers.getCharacter(input);
+            currentCharacter++;
             continue;
         }
 
-        log.write('DEBUG', `skiping unknown character = ${helpers.getCharacter(input)}.`);
-        helpers.getCharacter(input);  // Advance the cursor to avoid an infinite loop
-        currentCharacter += 1;
-        //throw new Error(`${helpers.peekCharacter(input)} is not valid.`);
+        // Skip unknown character and avoid infinite loop
+        log.write('DEBUG', `Skipping unknown character = ${helpers.getCharacter(input)}.`);
+        currentCharacter++;
     }
     return tokens;
 };

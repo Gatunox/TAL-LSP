@@ -16,9 +16,10 @@ import {
 import * as path from 'path';
 import log from './log';
 import { Token } from './helper';
-import { SymbolEntry } from './parser';
+import { printAllDefines, printAllLiterals, SymbolEntry } from './parser';
 import tokenizer from './tokenizer';
 import parseTokens from './parser';
+
 
 
 import { TextDocument } from "vscode-languageserver-textdocument";
@@ -67,6 +68,8 @@ function cacheTokens(documentUri: string, version: number, tokens: Token[]) {
 
     // const filterdTokens = tokens.filter((token: Token) => !isNewLine(token));
     const symbolsCache = parseTokens(tokens);
+    printAllLiterals();
+    printAllDefines();
     filterAndCacheSymbols(documentUri, version, symbolsCache);
 }
 

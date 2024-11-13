@@ -477,6 +477,11 @@ export const isBaseAddressSymbol = (character: string): boolean => {
     log.write('DEBUG', `returned "${retVal}" for character ${character}, at ${cursor}`);
     return retVal;
 };
+export const isEmpty = (value: string): boolean => {
+    const retVal = (value === "");
+    log.write('DEBUG', `returned "${retVal}" for character ${value}, at ${cursor}`)
+    return retVal;
+}
 export const isGlobalContext = (context: string): boolean => {
     const retVal = (context === "Global");
     log.write('DEBUG', `returned "${retVal}" for character ${context}, at ${cursor}`)

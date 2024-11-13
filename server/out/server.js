@@ -3,8 +3,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const node_1 = require("vscode-languageserver/node");
 const path = require("path");
 const log_1 = require("./log");
-const tokenizer_1 = require("./tokenizer");
 const parser_1 = require("./parser");
+const tokenizer_1 = require("./tokenizer");
+const parser_2 = require("./parser");
 const vscode_languageserver_textdocument_1 = require("vscode-languageserver-textdocument");
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -33,7 +34,9 @@ function cacheTokens(documentUri, version, tokens) {
         tokens: tokens, // Store filtered tokens
     });
     // const filterdTokens = tokens.filter((token: Token) => !isNewLine(token));
-    const symbolsCache = (0, parser_1.default)(tokens);
+    const symbolsCache = (0, parser_2.default)(tokens);
+    (0, parser_1.printAllLiterals)();
+    (0, parser_1.printAllDefines)();
     filterAndCacheSymbols(documentUri, version, symbolsCache);
 }
 function filterAndCacheSymbols(documentUri, version, symbolsCache) {
