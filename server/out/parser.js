@@ -814,12 +814,12 @@ function parseIndirection(tokens, type) {
             log_1.default.write('DEBUG', tokens[globalIndex]);
             globalIndex += 1; // Skip :=
             if (globalContext === 'Global') {
-                const expressionResult = parsePointerInitialization(tokens, globalIndex);
+                const expressionResult = parsePointerInitialization(tokens, globalIndex, globalContext);
                 initialization = expressionResult.AST;
                 globalIndex = expressionResult.index;
             }
             else {
-                const expressionResult = parseExpression(tokens, globalIndex);
+                const expressionResult = parseExpression(tokens, globalIndex, globalContext);
                 initialization = expressionResult.AST;
                 globalIndex = expressionResult.index;
             }
@@ -863,18 +863,9 @@ function parseVariable(tokens, type) {
         if (tokens[globalIndex].value === ':=') {
             log_1.default.write('DEBUG', tokens[globalIndex]);
             globalIndex += 1; // Skip :=
-            if (globalContext === 'Global') {
-                const expressionResult = parseVariableInitialization(tokens, globalIndex);
-                if (expressionResult) {
-                    initialization = expressionResult.AST;
-                    globalIndex = expressionResult.index;
-                }
-            }
-            else {
-                const expressionResult = parseExpression(tokens, globalIndex);
-                initialization = expressionResult.AST;
-                globalIndex = expressionResult.index;
-            }
+            const expressionResult = parseExpression(tokens, globalIndex, globalContext);
+            initialization = expressionResult.AST;
+            globalIndex = expressionResult.index;
         }
         endline = tokens[globalIndex - 1].line;
         endChar = tokens[globalIndex - 1].endCharacter;
@@ -958,7 +949,7 @@ function parseDataType(tokens, index) {
     log_1.default.write('DEBUG', `dataType: ${retType}, Index: ${index}`);
     return { dataType: retType, index };
 }
-function parsePointerInitialization(tokens, index) {
+function parsePointerInitialization(tokens, index, context) {
     log_1.default.write('DEBUG', 'called:');
     let reference;
     let arrayIndex;
@@ -975,7 +966,7 @@ function parsePointerInitialization(tokens, index) {
         // Check if it's referencing an array element (e.g., @array[3])
         if (tokens[index].value === '[') {
             index++;
-            const expressionResult = parseExpression(tokens, index);
+            const expressionResult = parseExpression(tokens, index, context);
             arrayIndex = expressionResult.AST;
             index = expressionResult.index;
             requireValue(tokens, index, ']');
@@ -998,7 +989,7 @@ function parsePointerInitialization(tokens, index) {
         // Check if it's referencing an array element (e.g., a[0])
         if (tokens[index].value === '[') {
             index++;
-            const expressionResult = parseExpression(tokens, index);
+            const expressionResult = parseExpression(tokens, index, context);
             arrayIndex = expressionResult.AST;
             index = expressionResult.index;
             requireValue(tokens, index, ']');
@@ -1023,10 +1014,10 @@ function parsePointerInitialization(tokens, index) {
         index
     };
 }
-function parseExpression(tokens, index, precedence = 0) {
+function parseExpression(tokens, index, context, precedence = 0) {
     log_1.default.write('DEBUG', 'called:');
     // Parse the left side of the expression, starting with unary or primary
-    let result = precedence === 0 ? parseUnary(tokens, index) : parsePrimary(tokens, index);
+    let result = precedence === 0 ? parseUnary(tokens, index, context) : parsePrimary(tokens, index, context);
     index = result.index;
     // Process operators based on the current precedence level
     while (tokens[index] && getPrecedence(tokens[index]) >= precedence) {
@@ -1034,7 +1025,7 @@ function parseExpression(tokens, index, precedence = 0) {
         const operatorPrecedence = getPrecedence(tokens[index]);
         index++;
         // Recursively parse the right operand at the next higher precedence level
-        const right = parseExpression(tokens, index, operatorPrecedence + 1);
+        const right = parseExpression(tokens, index, context, operatorPrecedence + 1);
         index = right.index;
         // Construct the BinaryExpression node with left and right operands
         result = {
@@ -1050,14 +1041,14 @@ function parseExpression(tokens, index, precedence = 0) {
     return result;
 }
 // New function to handle unary operators like '+a' or '-a'
-function parseUnary(tokens, index) {
+function parseUnary(tokens, index, context) {
     log_1.default.write('DEBUG', 'called:');
     const token = tokens[index];
     // Check for unary '+' or '-'
     if (token.value === '+' || token.value === '-') {
         const operator = token.value;
         index++;
-        const rightResult = parseUnary(tokens, index); // Recursive call to handle further unary expressions
+        const rightResult = parseUnary(tokens, index, context); // Recursive call to handle further unary expressions
         index = rightResult.index;
         return {
             AST: {
@@ -1069,9 +1060,9 @@ function parseUnary(tokens, index) {
         };
     }
     // Otherwise, parse as a primary expression
-    return parsePrimary(tokens, index);
+    return parsePrimary(tokens, index, context);
 }
-function parseVariableInitialization(tokens, index, handelError = true) {
+function parsePrimary(tokens, index, context) {
     log_1.default.write('DEBUG', 'called:');
     const token = tokens[index];
     if ((token.type === 'Identifier' && searchLiteral(globalContext, token.value))) {
@@ -1087,37 +1078,23 @@ function parseVariableInitialization(tokens, index, handelError = true) {
         return { AST: { type: 'Constant', value: token.value }, index };
     }
     if (token.type === 'Function') {
-        return parseFunctionCall(tokens, index);
+        return parseFunctionCall(tokens, index, context);
     }
     if (token.value === '(') {
         index++;
-        const expressionResult = parseExpression(tokens, index, 9);
+        const expressionResult = parseExpression(tokens, index, context, 9);
         index = expressionResult.index;
         requireValue(tokens, index, ")");
         index++;
         return { AST: expressionResult.AST, index };
     }
-    if (handelError) {
-        throwUnexpectedError(tokens, index);
-    }
-    return undefined;
-}
-function parsePrimary(tokens, index) {
-    log_1.default.write('DEBUG', 'called:');
-    const token = tokens[index];
-    const result = parseVariableInitialization(tokens, index, false);
-    if (result && 'AST' in result) {
-        return result;
-    }
-    else {
-        if (token.type === 'Identifier') {
-            index++;
-            return { AST: { type: 'Variable', name: token.value }, index };
-        }
+    if (context !== 'Global' && token.type === 'Identifier') {
+        index++;
+        return { AST: { type: 'Variable', name: token.value }, index };
     }
     throwUnexpectedError(tokens, index);
 }
-function parseFunctionCall(tokens, index) {
+function parseFunctionCall(tokens, index, context) {
     log_1.default.write('DEBUG', 'called:');
     const functionName = tokens[index].value; // Assume function name token
     index++; // Move past function name
@@ -1128,7 +1105,7 @@ function parseFunctionCall(tokens, index) {
     const argumentsList = [];
     // Parse each argument
     while (tokens[index].value !== ')') {
-        const argumentResult = parseExpression(tokens, index, 9); // Parse each argument as an expression
+        const argumentResult = parseExpression(tokens, index, context, 9); // Parse each argument as an expression
         argumentsList.push(argumentResult.AST);
         index = argumentResult.index;
         // If there's a comma, skip it to continue to the next argument
