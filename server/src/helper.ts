@@ -11,14 +11,14 @@ const LINECOMMENT = /^--$/
 const CRLF = /\r\n/;
 const DIRECTIVE = /\?/;
 
+const NUMERIC_BASE_SYMBOLS = ["%H", "%B", "%"];
+const NUMERIC_SUFFIX_SYMBOLS = ["%D", "%F", "D", "F"];
 /*********************************************************************************************************************************/
 /************************************************************  SYMBOLS  *********************************************************/
 /*********************************************************************************************************************************/
 const INDIRECTION_SYMBOLS = [".", ".EXT ", ".SG ",];
 const BASE_ADDRESS_SYMBOLS = ["'P'", "'G'", "'L'", "'P'", "'S'", "'SG'",];
 const DELIMITER_SYMBOLS = ["!", "--", ",", ";", ".", "<", ">", ":", "(", ")", "[", "]", "->", "\"", "=", "#", "'", "$", "?"];
-const NUMERIC_BASE_SYMBOLS = ["%H", "%B", "%"];
-const NUMERIC_SUFFIX_SYMBOLS = ["%D", "%F", "D", "F"];
 /*********************************************************************************************************************************/
 /***********************************************************  OPERATORS  *********************************************************/
 /*********************************************************************************************************************************/
@@ -71,6 +71,10 @@ const KEYWORDS = ["AND", "DO", "FORWARD", "MAIN", "RETURN", "TO",
     "CASE", "EXTERNAL", "LAND", "PROC", "STRUCT", "XOR",
     "CODE", "FIXED", "LITERAL", "REAL", "SUBPROC", 
     "DEFINE", "FOR", "LOR", "RESIDENT", "THEN",
+]
+const NONRESERVED_KEYWORDS = ["AT", "BELOW", "BIT_FILLER", "BLOCK", "BYTES", "C",
+    "COBOL", "ELEMEMTS", "EXT", "EXTENSIBLE", "FILLER", "FORTRAN",
+    "LANGUAGE", "NAME", "PASCAL", "PRIVATE", "UNSPECIFIED", "WORLDS",
 ]
 /*********************************************************************************************************************************/
 /********************************************************** DATA TYPES  **********************************************************/
@@ -349,6 +353,11 @@ export const isNotQuote = (character: string): boolean => {
 }
 export const isKeyword = (word: string): boolean => {
     const retVal = KEYWORDS.some(keyword => keyword.toLowerCase() === word.toLowerCase());
+    log.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`)
+    return retVal;
+}
+export const isNonreservedKeyword = (word: string): boolean => {
+    const retVal = NONRESERVED_KEYWORDS.some(keyword => keyword.toLowerCase() === word.toLowerCase());
     log.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`)
     return retVal;
 }

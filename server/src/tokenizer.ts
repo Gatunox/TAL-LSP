@@ -48,20 +48,30 @@ const handleNumber = (input: string, tokens: Token[], currentLine: number, curre
     return currentCharacter;
 };
 
-// Handle identifiers and keywords
-const handleIdentifierOrKeyword = (input: string, tokens: Token[], currentLine: number, currentCharacter: number) => {
+// Handle identifiers or DataTypes or NonreserverdKeywords or keywords
+const handleIdentifier = (input: string, tokens: Token[], currentLine: number, currentCharacter: number) => {
     const startChar = currentCharacter;
     let symbol = helpers.getCharacter(input);
     currentCharacter++;
 
-    while (helpers.isLetter(helpers.peekCharacter(input), true) || helpers.isNumber(helpers.peekCharacter(input))) {
+    while (helpers.isLetter(helpers.peekCharacter(input), true) || 
+           helpers.isNumber(helpers.peekCharacter(input))) {
         symbol += helpers.getCharacter(input);
         currentCharacter++;
     }
 
     if (helpers.isKeyword(symbol)) {
-        const type = helpers.isDataType(symbol) ? 'DataType' : (helpers.isOperator(symbol) ? 'Operator' : 'Keyword');
+        let type: string;
+        if (helpers.isDataType(symbol)) {
+            type = 'DataType';
+        } else if (helpers.isOperator(symbol)) {
+            type = 'Operator';
+        } else {
+            type = 'Keyword';
+        }
         addToken(tokens, type, symbol, currentLine, startChar, currentCharacter);
+    } else if (helpers.isNonreservedKeyword(symbol)) { 
+        addToken(tokens, 'NonReservedKeyword', symbol, currentLine, startChar, currentCharacter);
     } else {
         addToken(tokens, 'Identifier', symbol, currentLine, startChar, currentCharacter);
     }
@@ -161,7 +171,7 @@ const tokenize = (input: string) => {
         }
 
         if (helpers.isLetter(helpers.peekCharacter(input), true)) {
-            currentCharacter = handleIdentifierOrKeyword(input, tokens, currentLine, currentCharacter);
+            currentCharacter = handleIdentifier(input, tokens, currentLine, currentCharacter);
             continue;
         }
 
