@@ -371,6 +371,16 @@ export const isLiteral = (word: string): boolean => {
     log.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`)
     return retVal;
 }
+export const isName = (word: string): boolean => {
+    const retVal = 'NAME' === word.toUpperCase();
+    log.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`)
+    return retVal;
+}
+export const isBlock = (word: string): boolean => {
+    const retVal = 'BLOCK' === word.toUpperCase();
+    log.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`)
+    return retVal;
+}
 export const isString = (word: string): boolean => {
     const retVal = 'STRING' === word.toUpperCase();
     log.write('DEBUG', `returned "${retVal}" for word ${word}, at ${cursor}`)

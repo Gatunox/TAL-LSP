@@ -4,7 +4,8 @@ import { Token } from './helper';
 import log from './log';
 
 export type SymbolEntry = {
-    id: 'Directive' | // The kind of symbol
+    id: 'Name' | // The kind of symbol
+    'Directive' | 
     'Function' |
     'Variable' |
     'Array' |
@@ -192,6 +193,8 @@ function parseTokens(tokens: Token[]): Map<string, SymbolEntry> {
             parseDirectives(tokens);
         } else if (tokens[globalIndex] && tokens[globalIndex].type === 'Keyword') {
             parseKeyword(tokens);
+        } else if (tokens[globalIndex] && tokens[globalIndex].type === 'NonReservedKeyword') {
+            parseNonReservedKeyword(tokens);
         } else if (tokens[globalIndex] && helpers.isDataType(tokens[globalIndex].value)) {
             parseDeclarations(tokens)
         } else {
@@ -305,6 +308,47 @@ function parseKeyword(tokens: Token[]) {
         globalIndex += 1;  // move to next token;
     }
     return globalIndex;
+}
+
+
+function parseNonReservedKeyword(tokens: Token[]) {
+    log.write('DEBUG', 'called:');
+
+    if (tokens[globalIndex] && helpers.isName(tokens[globalIndex].value)) {
+        parseName(tokens);
+    } else if (tokens[globalIndex] && helpers.isBlock(tokens[globalIndex].value)) {
+        // parseBlock(tokens);
+    } else {
+        globalIndex += 1;  // move to next token;
+    }
+    return globalIndex;
+}
+
+
+function parseName(tokens: Token[]) {
+    log.write('DEBUG', 'called:');
+
+    let key = '';
+    globalIndex += 1; // Move past the NAME Keyword   
+    
+    const indent = tokens[globalIndex];
+    globalIndex += 1;  // Move passa the Identifier
+      
+    key = globalContext + '.' + indent.value;
+    literals.add(key);
+    symbolsCache.set(key, {
+        id: 'Name',
+        type: '',
+        name: indent.value,
+        size: 1,
+        value: "",
+        context: globalContext,
+        line: indent.line,
+        startChar: indent.startCharacter,
+        endChar: indent.endCharacter,
+    });
+      
+    log.write('DEBUG', 'finished:');
 }
 
 
